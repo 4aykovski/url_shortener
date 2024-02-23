@@ -102,5 +102,5 @@ fabric.properties
 
 .idea
 
-*.yaml
+local.yaml
 .env
