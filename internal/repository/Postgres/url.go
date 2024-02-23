@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/4aykovski/learning/golang/rest/internal/database"
+	"github.com/4aykovski/learning/golang/rest/internal/repository"
 	"github.com/lib/pq"
 )
 
@@ -13,7 +13,7 @@ type UrlRepositoryPostgres struct {
 	postgres *Postgres
 }
 
-func NewUserRepository(pq *Postgres) *UrlRepositoryPostgres {
+func NewUrlRepository(pq *Postgres) *UrlRepositoryPostgres {
 	return &UrlRepositoryPostgres{postgres: pq}
 }
 
@@ -31,7 +31,7 @@ func (repo *UrlRepositoryPostgres) SaveURL(urlToSave string, alias string) error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code.Name() {
 			case "unique_violation":
-				return database.ErrUrlExists
+				return repository.ErrUrlExists
 			}
 		}
 		return fmt.Errorf("%s: %w", op, err)
@@ -52,7 +52,7 @@ func (repo *UrlRepositoryPostgres) GetURL(alias string) (string, error) {
 	err = stmt.QueryRow(alias).Scan(&resultUrl)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", database.ErrURLNotFound
+			return "", repository.ErrURLNotFound
 		}
 
 		return "", fmt.Errorf("%s: %w", op, err)
@@ -72,7 +72,7 @@ func (repo *UrlRepositoryPostgres) DeleteURL(alias string) error {
 	_, err = stmt.Exec(alias)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return database.ErrURLNotFound
+			return repository.ErrURLNotFound
 		}
 
 		return fmt.Errorf("%s: %w", op, err)
