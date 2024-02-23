@@ -1,4 +1,4 @@
-package model
+package models
 
 type Url struct {
 	Id    int

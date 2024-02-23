@@ -6,14 +6,10 @@ import (
 	"os"
 
 	"github.com/4aykovski/learning/golang/rest/internal/config"
-	"github.com/4aykovski/learning/golang/rest/internal/database/Postgres"
-	delete2 "github.com/4aykovski/learning/golang/rest/internal/http-server/handlers/url/delete"
-	"github.com/4aykovski/learning/golang/rest/internal/http-server/handlers/url/redirect"
-	"github.com/4aykovski/learning/golang/rest/internal/http-server/handlers/url/save"
-	mwLogger "github.com/4aykovski/learning/golang/rest/internal/http-server/middleware/logger"
+	v1 "github.com/4aykovski/learning/golang/rest/internal/http-server/handlers/v1"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/logger/slogHelper"
+	"github.com/4aykovski/learning/golang/rest/internal/repository/postgres"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/natefinch/lumberjack"
 )
 
@@ -36,34 +32,21 @@ func main() {
 
 	// init db: postgres
 
-	pq, err := Postgres.New(cfg.Postgres)
+	pq, err := postgres.New(cfg.Postgres)
 	if err != nil {
 		log.Error("failed to init postgres database", slogHelper.Err(err))
 		os.Exit(1)
 	}
 
-	userRepo := Postgres.NewUserRepository(pq)
+	userRepo := postgres.NewUserRepository(pq)
 
 	// init router: chi, "chi render"
 
 	router := chi.NewRouter()
 
-	// middlewares
-	router.Use(middleware.RequestID)
-	router.Use(middleware.RealIP)
-	router.Use(mwLogger.New(log))
-	router.Use(middleware.Recoverer)
-	router.Use(middleware.URLFormat)
-
-	router.Route("/url", func(r chi.Router) {
-		r.Use(middleware.BasicAuth("url-shortener", map[string]string{
-			cfg.HTTPServer.User: cfg.HTTPServer.Password,
-		}))
-		r.Post("/save", save.New(log, userRepo))
-		r.Delete("/{alias}", delete2.New(log, userRepo))
-	})
-
-	router.Get("/url/{alias}", redirect.New(log, userRepo))
+	handler := v1.New(userRepo)
+	handler.InitMiddlewares(log, router)
+	handler.InitRoutes(log, router)
 
 	// run server
 

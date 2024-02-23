@@ -1,4 +1,4 @@
-package Postgres
+package postgres
 
 import (
 	"database/sql"
@@ -13,7 +13,7 @@ type Postgres struct {
 }
 
 func New(cfg config.Postgres) (*Postgres, error) {
-	const op = "Postgres.postgres.New"
+	const op = "postgres.postgres.New"
 
 	db, err := sql.Open("postgres", cfg.DSNTemplate)
 	if err != nil {
@@ -32,7 +32,7 @@ func New(cfg config.Postgres) (*Postgres, error) {
 }
 
 func databasePrepare(db *sql.DB) error {
-	const op = "Postgres.postgres.databasePrepare"
+	const op = "postgres.postgres.databasePrepare"
 
 	stmt1, err := db.Prepare(`
 	CREATE TABLE IF NOT EXISTS url(
