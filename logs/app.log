@@ -1,0 +1,3 @@
+{"time":"2024-02-23T08:24:12.320604424+03:00","level":"INFO","msg":"starting url-shortener","env":"prod"}
+{"time":"2024-02-23T08:24:12.347477524+03:00","level":"INFO","msg":"logger middleware enabled","component":"middleware/logger"}
+{"time":"2024-02-23T08:24:12.347512124+03:00","level":"INFO","msg":"starting server","address":"localhost:8080"}

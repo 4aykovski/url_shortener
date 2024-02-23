@@ -14,6 +14,7 @@ import (
 	"github.com/4aykovski/learning/golang/rest/internal/lib/logger/slogHelper"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/natefinch/lumberjack"
 )
 
 const (
@@ -94,7 +95,13 @@ func setupLogger(env string) *slog.Logger {
 	case envDev:
 		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	case envProd:
-		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+		lumber := &lumberjack.Logger{
+			Filename:   "logs/app.log",
+			MaxSize:    10,
+			MaxBackups: 3,
+			MaxAge:     7,
+		}
+		log = slog.New(slog.NewJSONHandler(lumber, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	}
 
 	return log
