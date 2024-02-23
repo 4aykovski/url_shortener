@@ -18,10 +18,12 @@ func NewUserRepository(pq *Postgres) *UrlRepositoryPostgres {
 }
 
 func (repo *UrlRepositoryPostgres) SaveURL(urlToSave string, alias string) error {
+	const op = "database.Postgres.UrlRepository.SaveURL"
+
 	stmt, err := repo.postgres.db.Prepare("INSERT INTO url(url, alias) VALUES($1, $2)")
 	if err != nil {
-		return fmt.Errorf("%w: %w", database.ErrCantSavePage, err)
-	} // 23505
+		return fmt.Errorf("%s: %w", op, err)
+	}
 
 	_, err = stmt.Exec(urlToSave, alias)
 	if err != nil {
@@ -29,19 +31,21 @@ func (repo *UrlRepositoryPostgres) SaveURL(urlToSave string, alias string) error
 		if errors.As(err, &pqErr) {
 			switch pqErr.Code.Name() {
 			case "unique_violation":
-				return fmt.Errorf("%w: %w", database.ErrCantSavePage, database.ErrUrlExists)
+				return database.ErrUrlExists
 			}
 		}
-		return fmt.Errorf("%w: %w", database.ErrCantSavePage, err)
+		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	return nil
 }
 
 func (repo *UrlRepositoryPostgres) GetURL(alias string) (string, error) {
+	const op = "database.Postgres.UrlRepository.GetURL"
+
 	stmt, err := repo.postgres.db.Prepare("SELECT url FROM url WHERE alias=$1")
 	if err != nil {
-		return "", fmt.Errorf("%w: %w", database.ErrCantGetUrl, err)
+		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
 	var resultUrl string
@@ -51,16 +55,18 @@ func (repo *UrlRepositoryPostgres) GetURL(alias string) (string, error) {
 			return "", database.ErrURLNotFound
 		}
 
-		return "", fmt.Errorf("%w: %w", database.ErrCantGetUrl, err)
+		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
 	return resultUrl, nil
 }
 
 func (repo *UrlRepositoryPostgres) DeleteURL(alias string) error {
+	const op = "database.Postgres.UrlRepository.DeleteURL"
+
 	stmt, err := repo.postgres.db.Prepare("DELETE FROM url WHERE alias = $1 ")
 	if err != nil {
-		return fmt.Errorf("%w: %w", database.ErrCantDeleteUrl, err)
+		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	_, err = stmt.Exec(alias)
@@ -69,7 +75,7 @@ func (repo *UrlRepositoryPostgres) DeleteURL(alias string) error {
 			return database.ErrURLNotFound
 		}
 
-		return fmt.Errorf("%w: %w", database.ErrCantDeleteUrl, err)
+		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	return nil

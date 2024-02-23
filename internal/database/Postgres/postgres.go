@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/4aykovski/learning/golang/rest/internal/config"
-	"github.com/4aykovski/learning/golang/rest/internal/database"
 	_ "github.com/lib/pq"
 )
 
@@ -14,23 +13,27 @@ type Postgres struct {
 }
 
 func New(cfg config.Postgres) (*Postgres, error) {
+	const op = "Postgres.postgres.New"
+
 	db, err := sql.Open("postgres", cfg.DSNTemplate)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", database.ErrCantCreateDatabase, err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	if err = db.Ping(); err != nil {
-		return nil, fmt.Errorf("%w: %w", database.ErrCantPingDatabase, err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	if err = databasePrepare(db); err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return &Postgres{db: db}, nil
 }
 
 func databasePrepare(db *sql.DB) error {
+	const op = "Postgres.postgres.databasePrepare"
+
 	stmt1, err := db.Prepare(`
 	CREATE TABLE IF NOT EXISTS url(
 	    id SERIAL PRIMARY KEY,
@@ -38,24 +41,24 @@ func databasePrepare(db *sql.DB) error {
 	    url TEXT NOT NULL
 	);`)
 	if err != nil {
-		return fmt.Errorf("%w: %w", database.ErrCantPrepareDatabase, err)
+		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	_, err = stmt1.Exec()
 	if err != nil {
-		return fmt.Errorf("%w: %w", database.ErrCantPrepareDatabase, err)
+		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	stmt2, err := db.Prepare(`
 	CREATE INDEX IF NOT EXISTS idx_alias ON url(alias);`)
 
 	if err != nil {
-		return fmt.Errorf("%w: %w", database.ErrCantPrepareDatabase, err)
+		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	_, err = stmt2.Exec()
 	if err != nil {
-		return fmt.Errorf("%w: %w", database.ErrCantPrepareDatabase, err)
+		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	return nil

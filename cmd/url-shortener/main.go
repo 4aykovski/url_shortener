@@ -82,7 +82,6 @@ func main() {
 	}
 
 	log.Error("server stopped")
-
 }
 
 func setupLogger(env string) *slog.Logger {
