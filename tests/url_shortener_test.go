@@ -27,7 +27,7 @@ func TestUrlShortener_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	e.POST("/url/save").
-		WithJSON(v1.Request{
+		WithJSON(v1.UrlSaveInput{
 			URL:   gofakeit.URL(),
 			Alias: random.NewRandomString(10),
 		}).
@@ -71,7 +71,7 @@ func TestURLShortener_SaveRedirectDelete(t *testing.T) {
 
 			// save
 			res := e.POST("/url/save").
-				WithJSON(v1.Request{
+				WithJSON(v1.UrlSaveInput{
 					URL:   tc.url,
 					Alias: tc.alias,
 				}).

@@ -15,12 +15,12 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type Request struct {
+type UrlSaveInput struct {
 	URL   string `json:"url" validate:"required,url"`
 	Alias string `json:"alias,omitempty"`
 }
 
-type Response struct {
+type aliasResponse struct {
 	resp.Response
 	Alias string `json:"alias,omitempty"`
 }
@@ -36,7 +36,7 @@ func (h *Handler) urlSave(log *slog.Logger) http.HandlerFunc {
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
 
-		var req Request
+		var req UrlSaveInput
 
 		err := render.DecodeJSON(r.Body, &req)
 		if err != nil {
@@ -158,7 +158,7 @@ func (h *Handler) urlDelete(log *slog.Logger) http.HandlerFunc {
 }
 
 func responseOK(w http.ResponseWriter, r *http.Request, alias string) {
-	render.JSON(w, r, Response{
+	render.JSON(w, r, aliasResponse{
 		Response: resp.OK(),
 		Alias:    alias,
 	})

@@ -12,6 +12,7 @@ import (
 	"github.com/4aykovski/learning/golang/rest/internal/http-server/handlers/v1/mocks"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/api"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/logger/handlers/slogdiscard"
+	"github.com/4aykovski/learning/golang/rest/internal/repository"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -123,11 +124,66 @@ func TestSaveHandler(t *testing.T) {
 
 			body := rr.Body.String()
 
-			var resp Response
+			var resp aliasResponse
 
 			require.NoError(t, json.Unmarshal([]byte(body), &resp))
 
 			require.Equal(t, tc.respError, resp.Error)
 		})
+	}
+}
+
+func TestDeleteHandler(t *testing.T) {
+	tests := []struct {
+		name          string
+		alias         string
+		expectedAlias string
+		respError     string
+		mockError     error
+	}{
+		{
+			name:          "Success",
+			alias:         "test_alias",
+			expectedAlias: "test_alias",
+		},
+		{
+			name:          "DeleteURL error",
+			alias:         "test_alias",
+			expectedAlias: "",
+			respError:     "url not found",
+			mockError:     repository.ErrURLNotFound,
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			urlRepo := mocks.NewUrlRepository(t)
+
+			if tc.respError == "" || tc.mockError != nil {
+				urlRepo.On("DeleteURL", tc.alias).
+					Return(tc.mockError).
+					Once()
+			}
+
+			r := chi.NewRouter()
+			r.Delete("/{alias}", New(urlRepo).urlDelete(slogdiscard.NewDiscardLogger()))
+
+			ts := httptest.NewServer(r)
+			defer ts.Close()
+
+			body, err := api.DeleteUrl(ts.URL + "/" + tc.alias)
+
+			var aliasResp aliasResponse
+			err = json.Unmarshal(body, &aliasResp)
+			require.NoError(t, err)
+
+			require.Equal(t, tc.respError, aliasResp.Error)
+			require.Equal(t, tc.expectedAlias, aliasResp.Alias)
+		})
+
 	}
 }
