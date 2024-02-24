@@ -1,14 +1,10 @@
 package api
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
-
-	"github.com/4aykovski/learning/golang/rest/internal/services"
 )
 
 var (
@@ -49,10 +45,6 @@ func DeleteUrl(url string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
-		return nil, fmt.Errorf("%w: %d", ErrInvalidStatusCode, resp.StatusCode)
-	}
-
 	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
@@ -63,19 +55,18 @@ func DeleteUrl(url string) ([]byte, error) {
 	return body, nil
 }
 
-func SignUpUser(url string, inp services.UserSignUpInput) ([]byte, error) {
-	body, err := json.Marshal(inp)
-	if err != nil {
-		return nil, err
-	}
-
+func SendRequest(method string, url string, body io.Reader) ([]byte, error) {
 	c := http.Client{}
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}
+	req.Close = true
 
 	httpResp, err := c.Do(req)
+	if err != nil {
+		return nil, err
+	}
 	defer httpResp.Body.Close()
 
 	respBody, err := io.ReadAll(httpResp.Body)
