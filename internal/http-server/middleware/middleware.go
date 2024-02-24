@@ -46,6 +46,8 @@ func Logger(log *slog.Logger) func(next http.Handler) http.Handler {
 func Authorization(log *slog.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			log.Info("Authorization middleware enabled")
+
 			next.ServeHTTP(w, r)
 		})
 	}

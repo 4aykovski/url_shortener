@@ -7,8 +7,10 @@ import (
 
 	"github.com/4aykovski/learning/golang/rest/internal/config"
 	v1 "github.com/4aykovski/learning/golang/rest/internal/http-server/handlers/v1"
+	"github.com/4aykovski/learning/golang/rest/internal/lib/hasher"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/logger/slogHelper"
 	"github.com/4aykovski/learning/golang/rest/internal/repository/Postgres"
+	"github.com/4aykovski/learning/golang/rest/internal/services"
 	"github.com/go-chi/chi/v5"
 	"github.com/natefinch/lumberjack"
 )
@@ -38,13 +40,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	userRepo := Postgres.NewUrlRepository(pq)
+	urlRepo := Postgres.NewUrlRepository(pq)
+	userRepo := Postgres.NewUserRepository(pq)
+
+	userService := services.NewUserService(userRepo, hasher.NewBcryptHasher())
 
 	// init router: chi, "chi render"
 
 	router := chi.NewRouter()
 
-	handler := v1.New(userRepo)
+	handler := v1.New(urlRepo, userService)
 	handler.InitMiddlewares(log, router)
 	handler.InitRoutes(log, router)
 

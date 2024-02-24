@@ -1,10 +1,14 @@
 package api
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/4aykovski/learning/golang/rest/internal/services"
 )
 
 var (
@@ -57,4 +61,27 @@ func DeleteUrl(url string) ([]byte, error) {
 	}
 
 	return body, nil
+}
+
+func SignUpUser(url string, inp services.UserSignUpInput) ([]byte, error) {
+	body, err := json.Marshal(inp)
+	if err != nil {
+		return nil, err
+	}
+
+	c := http.Client{}
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+
+	httpResp, err := c.Do(req)
+	defer httpResp.Body.Close()
+
+	respBody, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return respBody, nil
 }

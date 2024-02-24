@@ -22,12 +22,12 @@ func NewUserRepository(postgres *Postgres) *UserRepositoryPostgres {
 func (repo *UserRepositoryPostgres) CreateUser(ctx context.Context, user *models.User) error {
 	const op = "database.Postgres.UserRepository.CreateUser"
 
-	stmt, err := repo.postgres.db.Prepare("INSERT INTO user(id, login, password) VALUES($1, $2, $3)")
+	stmt, err := repo.postgres.db.Prepare("INSERT INTO users(login, password) VALUES($1, $2)")
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	_, err = stmt.ExecContext(ctx, user.Id, user.Login, user.Password)
+	_, err = stmt.ExecContext(ctx, user.Login, user.Password)
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
@@ -46,7 +46,7 @@ func (repo *UserRepositoryPostgres) CreateUser(ctx context.Context, user *models
 func (repo *UserRepositoryPostgres) DeleteUserById(ctx context.Context, id string) error {
 	const op = "database.Postgres.UserRepository.DeleteUser"
 
-	stmt, err := repo.postgres.db.Prepare("DELETE FROM user WHERE id = $1")
+	stmt, err := repo.postgres.db.Prepare("DELETE FROM users WHERE id = $1")
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -71,7 +71,7 @@ func (repo *UserRepositoryPostgres) DeleteUserById(ctx context.Context, id strin
 func (repo *UserRepositoryPostgres) DeleteUserByLogin(ctx context.Context, login string) error {
 	const op = "database.Postgres.UserRepository.DeleteUser"
 
-	stmt, err := repo.postgres.db.Prepare("DELETE FROM user WHERE login = $1")
+	stmt, err := repo.postgres.db.Prepare("DELETE FROM users WHERE login = $1")
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -96,7 +96,7 @@ func (repo *UserRepositoryPostgres) DeleteUserByLogin(ctx context.Context, login
 func (repo *UserRepositoryPostgres) GetUserById(ctx context.Context, id int) (*models.User, error) {
 	const op = "database.Postgres.UserRepository.GetUserById"
 
-	stmt, err := repo.postgres.db.Prepare("SELECT id, login, password FROM user WHERE id = $1")
+	stmt, err := repo.postgres.db.Prepare("SELECT id, login, password FROM users WHERE id = $1")
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -117,7 +117,7 @@ func (repo *UserRepositoryPostgres) GetUserById(ctx context.Context, id int) (*m
 func (repo *UserRepositoryPostgres) GetUsers(ctx context.Context) ([]models.User, error) {
 	const op = "database.Postgres.UserRepository.GetUsers"
 
-	stmt, err := repo.postgres.db.Prepare("SELECT id, login, password FROM user")
+	stmt, err := repo.postgres.db.Prepare("SELECT id, login, password FROM users")
 	if err != nil {
 		return nil, nil
 	}
@@ -147,7 +147,7 @@ func (repo *UserRepositoryPostgres) GetUsers(ctx context.Context) ([]models.User
 func (repo *UserRepositoryPostgres) UpdateUser(ctx context.Context, user *models.User) error {
 	const op = "database.Postgres.UserRepository.UpdateUser"
 
-	stmt, err := repo.postgres.db.Prepare("UPDATE user SET login = $1, password = $2 WHERE id = $3")
+	stmt, err := repo.postgres.db.Prepare("UPDATE users SET login = $1, password = $2 WHERE id = $3")
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}

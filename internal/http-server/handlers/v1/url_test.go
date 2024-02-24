@@ -42,7 +42,7 @@ func TestRedirectHandler(t *testing.T) {
 					Return(tc.url, tc.mockError).Once()
 			}
 
-			h := New(urlRepo)
+			h := New(urlRepo, nil)
 			r := chi.NewRouter()
 			r.Get("/{alias}", h.urlRedirect(slogdiscard.NewDiscardLogger()))
 
@@ -110,7 +110,7 @@ func TestSaveHandler(t *testing.T) {
 					Once()
 			}
 
-			handler := New(urlRepo).urlSave(slogdiscard.NewDiscardLogger())
+			handler := New(urlRepo, nil).urlSave(slogdiscard.NewDiscardLogger())
 
 			input := fmt.Sprintf(`{"url": "%s", "alias": "%s"}`, tc.url, tc.alias)
 
@@ -170,7 +170,7 @@ func TestDeleteHandler(t *testing.T) {
 			}
 
 			r := chi.NewRouter()
-			r.Delete("/{alias}", New(urlRepo).urlDelete(slogdiscard.NewDiscardLogger()))
+			r.Delete("/{alias}", New(urlRepo, nil).urlDelete(slogdiscard.NewDiscardLogger()))
 
 			ts := httptest.NewServer(r)
 			defer ts.Close()
