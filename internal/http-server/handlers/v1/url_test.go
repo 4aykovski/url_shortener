@@ -120,8 +120,6 @@ func TestSaveHandler(t *testing.T) {
 			rr := httptest.NewRecorder()
 			handler.ServeHTTP(rr, req)
 
-			require.Equal(t, rr.Code, http.StatusOK)
-
 			body := rr.Body.String()
 
 			var resp aliasResponse

@@ -42,7 +42,8 @@ func (h *Handler) urlSave(log *slog.Logger) http.HandlerFunc {
 		if err != nil {
 			log.Error("failed to decode request body", slogHelper.Err(err))
 
-			render.JSON(w, r, resp.Error("failed to decode request"))
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, resp.DecodeError())
 			return
 		}
 
@@ -54,6 +55,7 @@ func (h *Handler) urlSave(log *slog.Logger) http.HandlerFunc {
 
 			log.Error("invalid request", slogHelper.Err(err))
 
+			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, resp.ValidationError(validateErr))
 			return
 		}
@@ -67,12 +69,14 @@ func (h *Handler) urlSave(log *slog.Logger) http.HandlerFunc {
 			if errors.Is(err, repository.ErrUrlExists) {
 				log.Info("url already exists", slog.String("url", req.URL))
 
+				render.Status(r, http.StatusBadRequest)
 				render.JSON(w, r, resp.Error("url already exists"))
 				return
 			}
 
 			log.Error("failed to add url", slogHelper.Err(err))
 
+			render.Status(r, http.StatusInternalServerError)
 			render.JSON(w, r, resp.Error("failed to add url"))
 			return
 		}
@@ -96,7 +100,8 @@ func (h *Handler) urlRedirect(log *slog.Logger) http.HandlerFunc {
 		if alias == "" {
 			log.Info("empty alias")
 
-			render.JSON(w, r, resp.Error("invalid request"))
+			render.Status(r, http.StatusBadRequest)
+			render.JSON(w, r, resp.InvalidRequestError())
 			return
 		}
 
@@ -104,13 +109,15 @@ func (h *Handler) urlRedirect(log *slog.Logger) http.HandlerFunc {
 		if errors.Is(err, repository.ErrURLNotFound) {
 			log.Info("url not found", "alias", alias)
 
+			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, resp.Error("url not found"))
 			return
 		}
 		if err != nil {
 			log.Error("failed to get url", slogHelper.Err(err))
 
-			render.JSON(w, r, resp.Error("internal error"))
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, resp.InternalError())
 			return
 		}
 
@@ -133,7 +140,8 @@ func (h *Handler) urlDelete(log *slog.Logger) http.HandlerFunc {
 		if alias == "" {
 			log.Info("empty alias")
 
-			render.JSON(w, r, resp.Error("invalid request"))
+			render.Status(r, http.StatusBadRequest)
+			render.JSON(w, r, resp.InvalidRequestError())
 			return
 		}
 
@@ -141,13 +149,15 @@ func (h *Handler) urlDelete(log *slog.Logger) http.HandlerFunc {
 		if errors.Is(err, repository.ErrURLNotFound) {
 			log.Info("url not found", "alias", alias)
 
+			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, resp.Error("url not found"))
 			return
 		}
 		if err != nil {
 			log.Info("failed to delete url", "alias", alias)
 
-			render.JSON(w, r, resp.Error("internal error"))
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, resp.InternalError())
 			return
 		}
 
