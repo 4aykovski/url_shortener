@@ -114,6 +114,27 @@ func (repo *UserRepositoryPostgres) GetUserById(ctx context.Context, id int) (*m
 	return &user, nil
 }
 
+func (repo *UserRepositoryPostgres) GetUserByLogin(ctx context.Context, login string) (*models.User, error) {
+	const op = "database.Postgres.UserRepository.GetUserByLogin"
+
+	stmt, err := repo.postgres.db.Prepare("SELECT id, login, password FROM users WHERE login = $1")
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	var user models.User
+	err = stmt.QueryRowContext(ctx, login).Scan(&user.Id, &user.Login, &user.Password)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, repository.ErrUserNotFound
+		}
+
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return &user, nil
+}
+
 func (repo *UserRepositoryPostgres) GetUsers(ctx context.Context) ([]models.User, error) {
 	const op = "database.Postgres.UserRepository.GetUsers"
 
