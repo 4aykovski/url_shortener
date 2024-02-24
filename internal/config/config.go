@@ -11,9 +11,12 @@ import (
 )
 
 type Config struct {
-	Env        string     `yaml:"env" env-required:"true"`
-	Postgres   Postgres   `yaml:"postgres" env-required:"true"`
-	HTTPServer HTTPServer `yaml:"http_server" env-required:"true"`
+	Env             string        `yaml:"env" env-required:"true"`
+	Postgres        Postgres      `yaml:"postgres" env-required:"true"`
+	HTTPServer      HTTPServer    `yaml:"http_server" env-required:"true"`
+	Secret          string        `yaml:"secret" env-required:"true" env:"SECRET"`
+	AccessTokenTTL  time.Duration `yaml:"access_token_ttl" env-required:"true"`
+	RefreshTokenTTL time.Duration `yaml:"refresh_token_ttl" env-required:"true"`
 }
 
 type Postgres struct {

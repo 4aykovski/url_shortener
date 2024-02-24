@@ -20,6 +20,7 @@ type UrlRepository interface {
 //go:generate go run github.com/vektra/mockery/v2@v2.28.2 --name UserService
 type UserService interface {
 	SignUp(ctx context.Context, input services.UserSignUpInput) error
+	SignIn(ctx context.Context, input services.UserSignInInput) (*services.Tokens, error)
 }
 
 type Handler struct {

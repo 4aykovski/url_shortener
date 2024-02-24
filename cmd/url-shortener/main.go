@@ -9,6 +9,7 @@ import (
 	v1 "github.com/4aykovski/learning/golang/rest/internal/http-server/handlers/v1"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/hasher"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/logger/slogHelper"
+	tokenManager "github.com/4aykovski/learning/golang/rest/internal/lib/token-manager"
 	"github.com/4aykovski/learning/golang/rest/internal/repository/Postgres"
 	"github.com/4aykovski/learning/golang/rest/internal/services"
 	"github.com/go-chi/chi/v5"
@@ -42,8 +43,12 @@ func main() {
 
 	urlRepo := Postgres.NewUrlRepository(pq)
 	userRepo := Postgres.NewUserRepository(pq)
+	refreshRepo := Postgres.NewRefreshSessionRepository(pq)
 
-	userService := services.NewUserService(userRepo, hasher.NewBcryptHasher())
+	h := hasher.NewBcryptHasher()
+	tM := tokenManager.New(cfg.Secret)
+
+	userService := services.NewUserService(userRepo, refreshRepo, h, tM, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
 
 	// init router: chi, "chi render"
 

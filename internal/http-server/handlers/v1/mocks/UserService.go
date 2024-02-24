@@ -14,6 +14,32 @@ type UserService struct {
 	mock.Mock
 }
 
+// SignIn provides a mock function with given fields: ctx, input
+func (_m *UserService) SignIn(ctx context.Context, input services.UserSignInInput) (*services.Tokens, error) {
+	ret := _m.Called(ctx, input)
+
+	var r0 *services.Tokens
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, services.UserSignInInput) (*services.Tokens, error)); ok {
+		return rf(ctx, input)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, services.UserSignInInput) *services.Tokens); ok {
+		r0 = rf(ctx, input)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*services.Tokens)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, services.UserSignInInput) error); ok {
+		r1 = rf(ctx, input)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // SignUp provides a mock function with given fields: ctx, input
 func (_m *UserService) SignUp(ctx context.Context, input services.UserSignUpInput) error {
 	ret := _m.Called(ctx, input)

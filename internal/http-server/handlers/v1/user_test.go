@@ -1,9 +1,11 @@
 package v1
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -14,6 +16,7 @@ import (
 	"github.com/4aykovski/learning/golang/rest/internal/repository"
 	"github.com/4aykovski/learning/golang/rest/internal/services"
 	"github.com/go-chi/chi/v5"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -21,14 +24,14 @@ import (
 func TestSignUpHandler(t *testing.T) {
 	tests := []struct {
 		name      string
-		inp       services.UserSignUpInput
+		inp       userSignUpInput
 		status    string
 		respError string
 		mockError error
 	}{
 		{
 			name: "success sign up",
-			inp: services.UserSignUpInput{
+			inp: userSignUpInput{
 				Login:    "ssff23",
 				Password: "qwerty123!",
 			},
@@ -36,7 +39,7 @@ func TestSignUpHandler(t *testing.T) {
 		},
 		{
 			name: "invalid login max",
-			inp: services.UserSignUpInput{
+			inp: userSignUpInput{
 				Login:    "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789",
 				Password: "qwerty123!",
 			},
@@ -45,16 +48,16 @@ func TestSignUpHandler(t *testing.T) {
 		},
 		{
 			name: "invalid login min",
-			inp: services.UserSignUpInput{
+			inp: userSignUpInput{
 				Login:    "ss",
 				Password: "qwerty123!",
 			},
 			status:    response.StatusError,
-			respError: "field Login must be longer than 8 symbols",
+			respError: "field Login must be longer than 4 symbols",
 		},
 		{
 			name: "invalid password min",
-			inp: services.UserSignUpInput{
+			inp: userSignUpInput{
 				Login:    "ssff",
 				Password: "q",
 			},
@@ -63,7 +66,7 @@ func TestSignUpHandler(t *testing.T) {
 		},
 		{
 			name: "invalid password max",
-			inp: services.UserSignUpInput{
+			inp: userSignUpInput{
 				Login:    "ssff",
 				Password: "qwerty123!qwerty123!qwerty123!qwerty123!qwerty123!qwerty123!qwerty123!123",
 			},
@@ -72,7 +75,7 @@ func TestSignUpHandler(t *testing.T) {
 		},
 		{
 			name: "invalid password spec character",
-			inp: services.UserSignUpInput{
+			inp: userSignUpInput{
 				Login:    "ssff",
 				Password: "qwerty123",
 			},
@@ -81,7 +84,7 @@ func TestSignUpHandler(t *testing.T) {
 		},
 		{
 			name: "invalid password required",
-			inp: services.UserSignUpInput{
+			inp: userSignUpInput{
 				Login:    "ssff",
 				Password: "",
 			},
@@ -90,16 +93,16 @@ func TestSignUpHandler(t *testing.T) {
 		},
 		{
 			name: "invalid login required",
-			inp: services.UserSignUpInput{
+			inp: userSignUpInput{
 				Login:    "",
 				Password: "qwerty123!",
 			},
 			status:    response.StatusError,
-			respError: "field login is a required field",
+			respError: "field Login is a required field",
 		},
 		{
 			name: "user already exists",
-			inp: services.UserSignUpInput{
+			inp: userSignUpInput{
 				Login:    "ssff24",
 				Password: "qwerty123!5",
 			},
@@ -109,12 +112,12 @@ func TestSignUpHandler(t *testing.T) {
 		},
 		{
 			name: "unexpected error",
-			inp: services.UserSignUpInput{
+			inp: userSignUpInput{
 				Login:    "ssff24",
 				Password: "qwerty123!5",
 			},
 			status:    response.StatusError,
-			respError: "Internal error",
+			respError: response.InternalErrorMessage,
 			mockError: errors.New("unexpected error"),
 		},
 	}
@@ -127,8 +130,13 @@ func TestSignUpHandler(t *testing.T) {
 
 			userService := mocks.NewUserService(t)
 
+			inp := services.UserSignUpInput{
+				Login:    tc.inp.Login,
+				Password: tc.inp.Password,
+			}
+
 			if tc.respError == "" || tc.mockError != nil {
-				userService.On("SignUp", mock.Anything, tc.inp).
+				userService.On("SignUp", mock.Anything, inp).
 					Return(tc.mockError).Once()
 			}
 
@@ -140,13 +148,121 @@ func TestSignUpHandler(t *testing.T) {
 			defer ts.Close()
 
 			u := fmt.Sprintf(ts.URL + "/api/v1/users/signUp")
-			body, err := api.SignUpUser(u, tc.inp)
+			reqBody, err := json.Marshal(inp)
+			require.NoError(t, err)
+
+			body, err := api.SendRequest(http.MethodPost, u, bytes.NewReader(reqBody))
 			require.NoError(t, err)
 
 			var resp response.Response
 			err = json.Unmarshal(body, &resp)
 			require.NoError(t, err)
 			require.Equal(t, tc.status, resp.Status)
+			require.Equal(t, tc.respError, resp.Error)
+		})
+	}
+}
+
+func TestSignInHandler(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     userSignInInput
+		status    string
+		respError string
+		mockError error
+	}{
+		{
+			name: "success signed in",
+			input: userSignInInput{
+				Login:    "ssff23",
+				Password: "qwerty123!4",
+			},
+			status: response.StatusOK,
+		},
+		{
+			name: "invalid credentials",
+			input: userSignInInput{
+				Login:    "1",
+				Password: "1!4",
+			},
+			status:    response.StatusError,
+			respError: response.WrongCredentialsErrorMessage,
+			mockError: repository.ErrUserNotFound,
+		},
+		{
+			name: "unexpected error",
+			input: userSignInInput{
+				Login:    "ssff23",
+				Password: "qwerty123!4",
+			},
+			status:    response.StatusError,
+			respError: response.InternalErrorMessage,
+			mockError: errors.New("unexpected error"),
+		},
+		{
+			name: "empty input",
+			input: userSignInInput{
+				Login:    "",
+				Password: "",
+			},
+			status:    response.StatusError,
+			respError: "field Login is a required field, field Password is a required field",
+		},
+
+		{
+			name: "empty login input",
+			input: userSignInInput{
+				Login:    "",
+				Password: "qwerty123!4",
+			},
+			status:    response.StatusError,
+			respError: "field Login is a required field",
+		},
+		{
+			name: "empty password input",
+			input: userSignInInput{
+				Login:    "ssff23",
+				Password: "",
+			},
+			status:    response.StatusError,
+			respError: "field Password is a required field",
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			userService := mocks.NewUserService(t)
+
+			inp := services.UserSignInInput{Login: tc.input.Login, Password: tc.input.Password}
+
+			if tc.respError == "" || tc.mockError != nil {
+				userService.On("SignIn", mock.Anything, inp).
+					Return(tc.mockError).Once()
+			}
+
+			r := chi.NewRouter()
+			h := New(nil, userService).userSignIn(slogdiscard.NewDiscardLogger())
+			r.Post("/api/v1/users/signIn", h)
+
+			ts := httptest.NewServer(r)
+			defer ts.Close()
+
+			u := fmt.Sprintf(ts.URL + "/api/v1/users/signIn")
+			reqBody, err := json.Marshal(inp)
+			assert.NoError(t, err)
+
+			body, err := api.SendRequest(http.MethodPost, u, bytes.NewReader(reqBody))
+			require.NoError(t, err)
+
+			var resp tokenResponse
+			err = json.Unmarshal(body, &resp)
+			require.NoError(t, err)
+			require.Equal(t, tc.status, resp.Status)
+			require.Equal(t, tc.respError, resp.Error)
 		})
 	}
 }

@@ -33,7 +33,8 @@ func (h *Handler) userSignUp(log *slog.Logger) http.HandlerFunc {
 		if err != nil {
 			log.Error("failed to decode request body", slogHelper.Err(err))
 
-			render.JSON(w, r, resp.Error("failed to decode request"))
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, resp.DecodeError())
 			return
 		}
 
@@ -45,6 +46,7 @@ func (h *Handler) userSignUp(log *slog.Logger) http.HandlerFunc {
 
 			log.Error("invalid request", slogHelper.Err(err))
 
+			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, resp.ValidationError(validateErr))
 			return
 		}
@@ -56,13 +58,15 @@ func (h *Handler) userSignUp(log *slog.Logger) http.HandlerFunc {
 			if errors.Is(err, repository.ErrUserExists) {
 				log.Info("user already exists", slog.String("login", req.Login))
 
+				render.Status(r, http.StatusBadRequest)
 				render.JSON(w, r, resp.Error("Given login is already in use!"))
 				return
 			}
 
 			log.Error("failed to create user", slogHelper.Err(err))
 
-			render.JSON(w, r, resp.Error("Internal error"))
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, resp.InternalError())
 			return
 		}
 
@@ -72,9 +76,74 @@ func (h *Handler) userSignUp(log *slog.Logger) http.HandlerFunc {
 	}
 }
 
+type userSignInInput struct {
+	Login    string `json:"login" validate:"required"`
+	Password string `json:"password" validate:"required"`
+}
+
+type tokenResponse struct {
+	resp.Response
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+}
+
 func (h *Handler) userSignIn(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "handlers.v1.user.userSignIn"
 
+		log.With(
+			slog.String("op", op),
+			slog.String("request_id", middleware.GetReqID(r.Context())),
+		)
+
+		var inp userSignInInput
+		err := render.DecodeJSON(r.Body, &inp)
+		if err != nil {
+			log.Error("can't decode request body", slogHelper.Err(err))
+
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, resp.DecodeError())
+			return
+		}
+
+		if err = validator.New().Struct(inp); err != nil {
+			var validateErr validator.ValidationErrors
+			errors.As(err, &validateErr)
+
+			log.Error("invalid request", slogHelper.Err(err))
+
+			render.Status(r, http.StatusBadRequest)
+			render.JSON(w, r, resp.ValidationError(validateErr))
+			return
+		}
+
+		tokens, err := h.UserService.SignIn(r.Context(), services.UserSignInInput{
+			Login:    inp.Login,
+			Password: inp.Password,
+		})
+		if err != nil {
+			if errors.Is(err, repository.ErrUserNotFound) || errors.Is(err, services.ErrWrongCred) {
+				log.Info("user not found", slog.String("login", inp.Login))
+
+				render.Status(r, http.StatusBadRequest)
+				render.JSON(w, r, resp.WrongCredentialsError())
+				return
+			}
+
+			log.Error("can't sign in", slog.String("login", inp.Login), slogHelper.Err(err))
+
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, resp.InternalError())
+			return
+		}
+
+		log.Info("successfully signed in", slog.String("login", inp.Login))
+
+		render.JSON(w, r, tokenResponse{
+			Response:     resp.OK(),
+			AccessToken:  tokens.AccessToken,
+			RefreshToken: tokens.RefreshToken,
+		})
 	}
 }
 
