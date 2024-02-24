@@ -7,5 +7,4 @@ type RefreshSession struct {
 	UserId       int
 	RefreshToken string
 	ExpiresIn    time.Time
-	Ip           string
 }

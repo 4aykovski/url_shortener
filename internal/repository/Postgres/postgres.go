@@ -128,8 +128,7 @@ func initRefreshSessionsTable(db *sql.DB) error {
 		id SERIAL PRIMARY KEY,
 		user_id INTEGER REFERENCES users(id) NOT NULL,
 		refresh_token VARCHAR(128) NOT NULL UNIQUE,
-		expires_in DATE NOT NULL,
-		ip VARCHAR(15) NOT NULL
+		expires_in TIMESTAMP NOT NULL
 	);`)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)

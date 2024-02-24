@@ -24,19 +24,17 @@ func (repo *RefreshSessionRepositoryPostgres) CreateRefreshSession(ctx context.C
 	const op = "database.Postgres.RefreshSessionRepository.CreateRefreshSession"
 
 	stmt, err := repo.postgres.db.Prepare(`
-		INSERT INTO refresh_session(id, user_id, refresh_token, expires_in, ip) 
-		VALUES($1, $2, $3, $4, $5)`)
+		INSERT INTO refresh_sessions(user_id, refresh_token, expires_in) 
+		VALUES($1, $2, $3)`)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	_, err = stmt.ExecContext(
 		ctx,
-		refreshSession.Id,
 		refreshSession.UserId,
 		refreshSession.RefreshToken,
 		refreshSession.ExpiresIn,
-		refreshSession.Ip,
 	)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
@@ -48,7 +46,7 @@ func (repo *RefreshSessionRepositoryPostgres) CreateRefreshSession(ctx context.C
 func (repo *RefreshSessionRepositoryPostgres) DeleteRefreshSession(ctx context.Context, id int) error {
 	const op = "database.Postgres.RefreshSessionRepository.DeleteRefreshSession"
 
-	stmt, err := repo.postgres.db.Prepare("DELETE FROM refresh_session WHERE id = $1")
+	stmt, err := repo.postgres.db.Prepare("DELETE FROM refresh_sessions WHERE id = $1")
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -73,7 +71,7 @@ func (repo *RefreshSessionRepositoryPostgres) DeleteRefreshSession(ctx context.C
 func (repo *RefreshSessionRepositoryPostgres) UpdateRefreshSession(ctx context.Context, refreshSession *models.RefreshSession) error {
 	const op = "database.Postgres.RefreshSessionRepository.UpdateRefreshSession"
 
-	stmt, err := repo.postgres.db.Prepare("UPDATE refresh_session SET refresh_token = $1, expires_in = $2, ip = $3 WHERE id = $4")
+	stmt, err := repo.postgres.db.Prepare("UPDATE refresh_sessions SET refresh_token = $1, expires_in = $2 WHERE id = $4")
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -82,7 +80,6 @@ func (repo *RefreshSessionRepositoryPostgres) UpdateRefreshSession(ctx context.C
 		ctx,
 		refreshSession.RefreshToken,
 		refreshSession.ExpiresIn,
-		refreshSession.Ip,
 		refreshSession.Id,
 	)
 	if err != nil {
@@ -95,7 +92,7 @@ func (repo *RefreshSessionRepositoryPostgres) UpdateRefreshSession(ctx context.C
 func (repo *RefreshSessionRepositoryPostgres) GetRefreshSession(ctx context.Context, refreshTokenId int) (*models.RefreshSession, error) {
 	const op = "database.Postgres.RefreshSessionRepository.GetRefreshSession"
 
-	stmt, err := repo.postgres.db.Prepare("SELECT id, user_id, refresh_token, expires_in, ip FROM refresh_session WHERE id = $1")
+	stmt, err := repo.postgres.db.Prepare("SELECT id, user_id, refresh_token, expires_in FROM refresh_sessions WHERE id = $1")
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -106,7 +103,6 @@ func (repo *RefreshSessionRepositoryPostgres) GetRefreshSession(ctx context.Cont
 		&refreshSession.UserId,
 		&refreshSession.RefreshToken,
 		&refreshSession.ExpiresIn,
-		&refreshSession.Ip,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -117,4 +113,39 @@ func (repo *RefreshSessionRepositoryPostgres) GetRefreshSession(ctx context.Cont
 	}
 
 	return &refreshSession, nil
+}
+
+func (repo *RefreshSessionRepositoryPostgres) GetUserRefreshSessions(ctx context.Context, userId int) ([]models.RefreshSession, error) {
+	const op = "database.Postgres.RefreshSessionRepository.GetUserRefreshSessions"
+
+	stmt, err := repo.postgres.db.Prepare("SELECT id, user_id, refresh_token, expires_in FROM refresh_sessions WHERE user_id=$1")
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	rows, err := stmt.QueryContext(ctx, userId)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, repository.ErrRefreshSessionsNotFound
+		}
+
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	var refreshSessions []models.RefreshSession
+	for rows.Next() {
+		var refreshSession models.RefreshSession
+		err = rows.Scan(
+			&refreshSession.Id,
+			&refreshSession.UserId,
+			&refreshSession.RefreshToken,
+			&refreshSession.ExpiresIn,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+		refreshSessions = append(refreshSessions, refreshSession)
+	}
+
+	return refreshSessions, nil
 }
