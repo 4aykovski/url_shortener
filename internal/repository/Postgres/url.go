@@ -69,11 +69,17 @@ func (repo *UrlRepositoryPostgres) DeleteURL(alias string) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	_, err = stmt.Exec(alias)
+	res, err := stmt.Exec(alias)
+	deleted, err := res.RowsAffected()
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return repository.ErrURLNotFound
-		}
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	if deleted == 0 {
+		return repository.ErrURLNotFound
+	}
+
+	if err != nil {
 
 		return fmt.Errorf("%s: %w", op, err)
 	}

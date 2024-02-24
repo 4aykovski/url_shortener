@@ -53,12 +53,17 @@ func (repo *RefreshSessionRepositoryPostgres) DeleteRefreshSession(ctx context.C
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	_, err = stmt.ExecContext(ctx, id)
+	res, err := stmt.ExecContext(ctx, id)
+	deleted, err := res.RowsAffected()
 	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
 
-		if errors.Is(err, sql.ErrNoRows) {
-			return repository.ErrRefreshSessionNotFound
-		}
+	if deleted == 0 {
+		return repository.ErrURLNotFound
+	}
+
+	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 

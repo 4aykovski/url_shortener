@@ -51,12 +51,17 @@ func (repo *UserRepositoryPostgres) DeleteUserById(ctx context.Context, id strin
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	_, err = stmt.ExecContext(ctx, id)
+	res, err := stmt.ExecContext(ctx, id)
+	deleted, err := res.RowsAffected()
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return repository.ErrUserNotFound
-		}
+		return fmt.Errorf("%s: %w", op, err)
+	}
 
+	if deleted == 0 {
+		return repository.ErrURLNotFound
+	}
+
+	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -71,12 +76,17 @@ func (repo *UserRepositoryPostgres) DeleteUserByLogin(ctx context.Context, login
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	_, err = stmt.ExecContext(ctx, login)
+	res, err := stmt.ExecContext(ctx, login)
+	deleted, err := res.RowsAffected()
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return repository.ErrUserNotFound
-		}
+		return fmt.Errorf("%s: %w", op, err)
+	}
 
+	if deleted == 0 {
+		return repository.ErrURLNotFound
+	}
+
+	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
