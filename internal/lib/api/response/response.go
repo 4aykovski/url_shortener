@@ -13,8 +13,12 @@ type Response struct {
 }
 
 const (
-	StatusOK    = "OK"
-	StatusError = "Error"
+	StatusOK                     = "OK"
+	StatusError                  = "Error"
+	InternalErrorMessage         = "internal error"
+	DecodeErrorMessage           = "failed to decode request body"
+	InvalidRequestErrorMessage   = "invalid request"
+	WrongCredentialsErrorMessage = "wrong credentials"
 )
 
 func OK() Response {
@@ -28,6 +32,22 @@ func Error(msg string) Response {
 		Status: StatusError,
 		Error:  msg,
 	}
+}
+
+func InternalError() Response {
+	return Error(InternalErrorMessage)
+}
+
+func DecodeError() Response {
+	return Error(DecodeErrorMessage)
+}
+
+func InvalidRequestError() Response {
+	return Error(InvalidRequestErrorMessage)
+}
+
+func WrongCredentialsError() Response {
+	return Error(WrongCredentialsErrorMessage)
 }
 
 func ValidationError(errs validator.ValidationErrors) Response {
