@@ -18,7 +18,7 @@ func (b *BcryptHasher) Hash(password string) (string, error) {
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
-		fmt.Errorf("%s: %w", op, err)
+		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
 	return string(hash), nil
