@@ -91,7 +91,7 @@ func initUsersTable(db *sql.DB) error {
 	CREATE TABLE IF NOT EXISTS "users"(
 		"id" SERIAL PRIMARY KEY,
 		"login" VARCHAR(128) NOT NULL UNIQUE,
-		"password" VARCHAR(128) NOT NULL
+		"password" VARCHAR(60) NOT NULL
 	);
 	`)
 	if err != nil {
@@ -128,7 +128,7 @@ func initRefreshSessionsTable(db *sql.DB) error {
 		id SERIAL PRIMARY KEY,
 		user_id INTEGER REFERENCES users(id) NOT NULL,
 		refresh_token VARCHAR(128) NOT NULL UNIQUE,
-		expires_in DATETIME NOT NULL,
+		expires_in DATE NOT NULL,
 		ip VARCHAR(15) NOT NULL
 	);`)
 	if err != nil {
