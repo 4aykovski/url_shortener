@@ -8,7 +8,6 @@ import (
 	resp "github.com/4aykovski/learning/golang/rest/internal/lib/api/response"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/logger/slogHelper"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/random"
-	tokenManager "github.com/4aykovski/learning/golang/rest/internal/lib/token-manager"
 	"github.com/4aykovski/learning/golang/rest/internal/repository"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -25,8 +24,6 @@ type UrlRepository interface {
 
 type UrlHandler struct {
 	UrlRepo UrlRepository
-
-	tokenManager tokenManager.TokenManager
 }
 
 func NewUrlHandler(
