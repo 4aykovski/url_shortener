@@ -100,16 +100,9 @@ func (s *UserService) SignIn(ctx context.Context, input UserSignInInput) (*token
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	sessions, err := s.refreshSessionService.GetAllUserRefreshSessions(ctx, user.Id)
+	err = s.removeExcessRefreshSession(ctx, user.Id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	if len(sessions) >= 5 {
-		err = s.refreshSessionService.DeleteEarliestRefreshSession(ctx, sessions)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", op, err)
-		}
 	}
 
 	tokens, err := s.refreshSessionService.CreateRefreshSession(ctx, user.Id)
@@ -166,4 +159,22 @@ func (s *UserService) checkCred(ctx context.Context, input UserSignInInput) (*mo
 	}
 
 	return user, nil
+}
+
+func (s *UserService) removeExcessRefreshSession(ctx context.Context, userId int) error {
+	const op = "services.user.removeExcessRefreshSession"
+
+	sessions, err := s.refreshSessionService.GetAllUserRefreshSessions(ctx, userId)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	if len(sessions) >= 5 {
+		err = s.refreshSessionService.DeleteEarliestRefreshSession(ctx, sessions)
+		if err != nil {
+			return fmt.Errorf("%s: %w", op, err)
+		}
+	}
+
+	return nil
 }
