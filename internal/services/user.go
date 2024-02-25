@@ -4,11 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
 	"time"
 
 	"github.com/4aykovski/learning/golang/rest/internal/models"
-	"github.com/4aykovski/learning/golang/rest/internal/repository"
 )
 
 type userRepository interface {
@@ -26,23 +24,21 @@ type passHasher interface {
 	CheckPassword(password string, hashedPassword string) bool
 }
 
-type refreshSessionRepository interface {
-	CreateRefreshSession(ctx context.Context, refreshSession *models.RefreshSession) error
-	DeleteRefreshSession(ctx context.Context, id int) error
-	UpdateRefreshSession(ctx context.Context, refreshSession *models.RefreshSession) error
-	GetRefreshSession(ctx context.Context, refreshTokenId int) (*models.RefreshSession, error)
-	GetUserRefreshSessions(ctx context.Context, userId int) ([]models.RefreshSession, error)
-}
-
 type tokenManager interface {
 	NewJWT(userId string, ttl time.Duration) (string, error)
 	Parse(accessToken string) (string, error)
 	NewRefreshToken() (string, error)
 }
 
+type refreshSessionService interface {
+	createRefreshSession(ctx context.Context, userId int, refreshToken string) error
+	getAllUserRefreshSessions(ctx context.Context, userId int) ([]models.RefreshSession, error)
+	deleteEarliestRefreshSession(ctx context.Context, sessions []models.RefreshSession) error
+}
+
 type UserService struct {
-	userRepo           userRepository
-	refreshSessionRepo refreshSessionRepository
+	userRepo              userRepository
+	refreshSessionService refreshSessionService
 
 	hasher       passHasher
 	tokenManager tokenManager
@@ -58,19 +54,17 @@ type UserSignUpInput struct {
 
 func NewUserService(
 	userRepo userRepository,
-	refreshSessionRepo refreshSessionRepository,
 	hasher passHasher,
 	tokenManager tokenManager,
 	accessTokenTTL time.Duration,
 	refreshTokenTTL time.Duration,
 ) *UserService {
 	return &UserService{
-		userRepo:           userRepo,
-		refreshSessionRepo: refreshSessionRepo,
-		hasher:             hasher,
-		tokenManager:       tokenManager,
-		accessTokenTTL:     accessTokenTTL,
-		refreshTokenTTL:    refreshTokenTTL,
+		userRepo:        userRepo,
+		hasher:          hasher,
+		tokenManager:    tokenManager,
+		accessTokenTTL:  accessTokenTTL,
+		refreshTokenTTL: refreshTokenTTL,
 	}
 }
 
@@ -120,19 +114,19 @@ func (s *UserService) SignIn(ctx context.Context, input UserSignInInput) (*Token
 		return nil, fmt.Errorf("%s: %w", op, ErrWrongCred)
 	}
 
-	sessions, err := s.getAllUserRefreshSessions(ctx, user.Id)
+	sessions, err := s.refreshSessionService.getAllUserRefreshSessions(ctx, user.Id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	if len(sessions) >= 5 {
-		err = s.deleteEarliestRefreshSession(ctx, sessions)
+		err = s.refreshSessionService.deleteEarliestRefreshSession(ctx, sessions)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 	}
 
-	tokens, err := s.createRefreshSession(ctx, user.Id)
+	tokens, err := s.createTokensPair(ctx, user.Id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -140,8 +134,8 @@ func (s *UserService) SignIn(ctx context.Context, input UserSignInInput) (*Token
 	return tokens, nil
 }
 
-func (s *UserService) createRefreshSession(ctx context.Context, userId int) (*Tokens, error) {
-	const op = "services.user.createRefreshSession"
+func (s *UserService) createTokensPair(ctx context.Context, userId int) (*Tokens, error) {
+	const op = "services.user.createTokensPair"
 
 	accessToken, err := s.tokenManager.NewJWT(string(rune(userId)), s.accessTokenTTL)
 	if err != nil {
@@ -153,12 +147,7 @@ func (s *UserService) createRefreshSession(ctx context.Context, userId int) (*To
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	session := models.RefreshSession{
-		UserId:       userId,
-		RefreshToken: refreshToken,
-		ExpiresIn:    time.Now().Add(s.refreshTokenTTL),
-	}
-	err = s.refreshSessionRepo.CreateRefreshSession(ctx, &session)
+	err = s.refreshSessionService.createRefreshSession(ctx, userId, refreshToken)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -169,34 +158,4 @@ func (s *UserService) createRefreshSession(ctx context.Context, userId int) (*To
 	}
 
 	return &tokens, nil
-}
-
-func (s *UserService) getAllUserRefreshSessions(ctx context.Context, userId int) ([]models.RefreshSession, error) {
-	const op = "services.user.getAllUserRefreshSessions"
-
-	sessions, err := s.refreshSessionRepo.GetUserRefreshSessions(ctx, userId)
-	if err != nil {
-		if errors.Is(err, repository.ErrRefreshSessionsNotFound) {
-			return []models.RefreshSession{}, nil
-		}
-
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	return sessions, nil
-}
-
-func (s *UserService) deleteEarliestRefreshSession(ctx context.Context, sessions []models.RefreshSession) error {
-	const op = "services.user.deleteEarliestRefreshSession"
-
-	sort.Slice(sessions, func(i, j int) bool {
-		return sessions[i].ExpiresIn.Before(sessions[j].ExpiresIn)
-	})
-
-	err := s.refreshSessionRepo.DeleteRefreshSession(ctx, sessions[0].Id)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
-	return nil
 }
