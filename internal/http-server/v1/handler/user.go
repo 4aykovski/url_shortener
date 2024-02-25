@@ -185,16 +185,32 @@ func (h *UserHandler) SignIn(log *slog.Logger) http.HandlerFunc {
 
 func (h *UserHandler) Logout(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "v1.handler.user.Logout"
+
+		log = log.With(
+			slog.String("op", op),
+			slog.String("request_id", middleware.GetReqID(r.Context())),
+		)
+
+		var token string
 		cookie, err := r.Cookie(refreshCookieName)
 		if err != nil {
-			log.Info("refreshCookie is not specified")
+			var res userRefresh
+			err = render.DecodeJSON(r.Body, &res)
+			if err != nil {
+				log.Info("refreshCookie is not specified")
 
-			render.Status(r, http.StatusBadRequest)
-			render.JSON(w, r, resp.WrongCredentialsError())
-			return
+				render.Status(r, http.StatusBadRequest)
+				render.JSON(w, r, resp.WrongCredentialsError())
+				return
+			}
+
+			token = res.RefreshToken
+		} else {
+			token = cookie.Value
 		}
 
-		err = h.UserService.Logout(r.Context(), cookie.Value)
+		err = h.UserService.Logout(r.Context(), token)
 		if err != nil {
 			log.Error("can't logout")
 
@@ -212,18 +228,38 @@ func (h *UserHandler) Logout(log *slog.Logger) http.HandlerFunc {
 	}
 }
 
+type userRefresh struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
 func (h *UserHandler) Refresh(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "v1.handler.user.Refresh"
+
+		log = log.With(
+			slog.String("op", op),
+			slog.String("request_id", middleware.GetReqID(r.Context())),
+		)
+
+		var token string
 		cookie, err := r.Cookie(refreshCookieName)
 		if err != nil {
-			log.Info("refreshCookie is not specified")
+			var res userRefresh
+			err = render.DecodeJSON(r.Body, &res)
+			if err != nil {
+				log.Info("refreshCookie is not specified")
 
-			render.Status(r, http.StatusBadRequest)
-			render.JSON(w, r, resp.WrongCredentialsError())
-			return
+				render.Status(r, http.StatusBadRequest)
+				render.JSON(w, r, resp.WrongCredentialsError())
+				return
+			}
+
+			token = res.RefreshToken
+		} else {
+			token = cookie.Value
 		}
 
-		tokens, err := h.UserService.Refresh(r.Context(), cookie.Value)
+		tokens, err := h.UserService.Refresh(r.Context(), token)
 		if err != nil {
 			log.Error("can't refresh tokens", slogHelper.Err(err))
 
