@@ -95,7 +95,7 @@ var ErrWrongCred = errors.New("wrong credentials")
 func (s *UserService) SignIn(ctx context.Context, input UserSignInInput) (*tokenManager.Tokens, error) {
 	const op = "services.user.SignIn"
 
-	user, err := s.getUserWithCreds(ctx, input)
+	user, err := s.getUserWithCreds(ctx, input.Login, input.Password)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -141,10 +141,10 @@ func (s *UserService) Refresh(ctx context.Context, refreshToken string) (*tokenM
 }
 
 // getUserWithCreds checks if credentials are valid. If it's valid returns user, otherwise returns nil and error
-func (s *UserService) getUserWithCreds(ctx context.Context, input UserSignInInput) (*models.User, error) {
+func (s *UserService) getUserWithCreds(ctx context.Context, login, password string) (*models.User, error) {
 	const op = "services.user.getUserWithCreds"
 
-	user, err := s.userRepo.GetUserByLogin(ctx, input.Login)
+	user, err := s.userRepo.GetUserByLogin(ctx, login)
 	if err != nil {
 		if errors.Is(err, repository.ErrUserNotFound) {
 			return nil, fmt.Errorf("%s: %w", op, ErrWrongCred)
@@ -153,7 +153,7 @@ func (s *UserService) getUserWithCreds(ctx context.Context, input UserSignInInpu
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	ok := s.hasher.CheckPassword(input.Password, user.Password)
+	ok := s.hasher.CheckPassword(password, user.Password)
 	if !ok {
 		return nil, fmt.Errorf("%s: %w", op, ErrWrongCred)
 	}
