@@ -1,19 +1,34 @@
 package v1
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/4aykovski/learning/golang/rest/internal/http-server/v1/handler"
 	"github.com/4aykovski/learning/golang/rest/internal/http-server/v1/middleware"
 	tokenManager "github.com/4aykovski/learning/golang/rest/internal/lib/token-manager"
+	"github.com/4aykovski/learning/golang/rest/internal/services"
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 )
 
+type UserService interface {
+	SignUp(ctx context.Context, input services.UserSignUpInput) error
+	SignIn(ctx context.Context, input services.UserSignInInput) (*tokenManager.Tokens, error)
+	Logout(ctx context.Context, refreshToken string) error
+	Refresh(ctx context.Context, refreshToken string) (*tokenManager.Tokens, error)
+}
+
+type UrlRepository interface {
+	SaveURL(urlToSave string, alias string) error
+	GetURL(alias string) (string, error)
+	DeleteURL(alias string) error
+}
+
 func NewMux(
 	log *slog.Logger,
-	urlRepo handler.UrlRepository,
-	userService handler.UserService,
+	urlRepo UrlRepository,
+	userService UserService,
 	tokenManager tokenManager.TokenManager,
 ) *chi.Mux {
 	var (
