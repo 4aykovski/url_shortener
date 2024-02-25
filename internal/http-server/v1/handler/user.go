@@ -183,6 +183,10 @@ func (h *UserHandler) SignIn(log *slog.Logger) http.HandlerFunc {
 	}
 }
 
+type userLogoutInput struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
 func (h *UserHandler) Logout(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "v1.handler.user.Logout"
@@ -195,7 +199,7 @@ func (h *UserHandler) Logout(log *slog.Logger) http.HandlerFunc {
 		var token string
 		cookie, err := r.Cookie(refreshCookieName)
 		if err != nil {
-			var res userRefresh
+			var res userLogoutInput
 			err = render.DecodeJSON(r.Body, &res)
 			if err != nil {
 				log.Info("refreshCookie is not specified")
@@ -228,7 +232,7 @@ func (h *UserHandler) Logout(log *slog.Logger) http.HandlerFunc {
 	}
 }
 
-type userRefresh struct {
+type userRefreshInput struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
@@ -244,7 +248,7 @@ func (h *UserHandler) Refresh(log *slog.Logger) http.HandlerFunc {
 		var token string
 		cookie, err := r.Cookie(refreshCookieName)
 		if err != nil {
-			var res userRefresh
+			var res userRefreshInput
 			err = render.DecodeJSON(r.Body, &res)
 			if err != nil {
 				log.Info("refreshCookie is not specified")
