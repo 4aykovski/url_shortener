@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"errors"
@@ -49,9 +49,9 @@ type aliasResponse struct {
 
 const aliasLength = 6
 
-func (h *UrlHandler) UrlSave(log *slog.Logger) http.HandlerFunc {
+func (h *UrlHandler) Save(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "handlers.v1.url.Save"
+		const op = "v1.handler.url.Save"
 
 		log = log.With(
 			slog.String("op", op),
@@ -109,9 +109,9 @@ func (h *UrlHandler) UrlSave(log *slog.Logger) http.HandlerFunc {
 	}
 }
 
-func (h *UrlHandler) UrlRedirect(log *slog.Logger) http.HandlerFunc {
+func (h *UrlHandler) Redirect(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "handlers.v1.url.Redirect"
+		const op = "v1.handler.url.Redirect"
 
 		log = log.With(
 			slog.String("op", op),
@@ -149,9 +149,9 @@ func (h *UrlHandler) UrlRedirect(log *slog.Logger) http.HandlerFunc {
 	}
 }
 
-func (h *UrlHandler) UrlDelete(log *slog.Logger) http.HandlerFunc {
+func (h *UrlHandler) Delete(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "handlers.v1.url.Delete"
+		const op = "v1.handler.url.Delete"
 
 		log = log.With(
 			slog.String("op", op),

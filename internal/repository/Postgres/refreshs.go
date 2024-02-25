@@ -43,15 +43,15 @@ func (repo *RefreshSessionRepositoryPostgres) CreateRefreshSession(ctx context.C
 	return nil
 }
 
-func (repo *RefreshSessionRepositoryPostgres) DeleteRefreshSession(ctx context.Context, id int) error {
+func (repo *RefreshSessionRepositoryPostgres) DeleteRefreshSession(ctx context.Context, token string) error {
 	const op = "database.Postgres.RefreshSessionRepository.DeleteRefreshSession"
 
-	stmt, err := repo.postgres.db.Prepare("DELETE FROM refresh_sessions WHERE id = $1")
+	stmt, err := repo.postgres.db.Prepare("DELETE FROM refresh_sessions WHERE refresh_token = $1")
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	res, err := stmt.ExecContext(ctx, id)
+	res, err := stmt.ExecContext(ctx, token)
 	deleted, err := res.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)

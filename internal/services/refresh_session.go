@@ -13,7 +13,7 @@ import (
 
 type refreshSessionRepository interface {
 	CreateRefreshSession(ctx context.Context, refreshSession *models.RefreshSession) error
-	DeleteRefreshSession(ctx context.Context, id int) error
+	DeleteRefreshSession(ctx context.Context, token string) error
 	UpdateRefreshSession(ctx context.Context, refreshSession *models.RefreshSession) error
 	GetRefreshSession(ctx context.Context, refreshTokenId int) (*models.RefreshSession, error)
 	GetUserRefreshSessions(ctx context.Context, userId int) ([]models.RefreshSession, error)
@@ -38,7 +38,7 @@ func NewRefreshSessionService(
 	}
 }
 
-func (s *RefreshSessionService) createRefreshSession(ctx context.Context, userId int, refreshToken string) error {
+func (s *RefreshSessionService) CreateRefreshSession(ctx context.Context, userId int, refreshToken string) error {
 	const op = "services.refresh_session.CreateRefreshSession"
 
 	session := models.RefreshSession{
@@ -54,8 +54,8 @@ func (s *RefreshSessionService) createRefreshSession(ctx context.Context, userId
 	return nil
 }
 
-func (s *RefreshSessionService) getAllUserRefreshSessions(ctx context.Context, userId int) ([]models.RefreshSession, error) {
-	const op = "services.refresh_session.getAllUserRefreshSessions"
+func (s *RefreshSessionService) GetAllUserRefreshSessions(ctx context.Context, userId int) ([]models.RefreshSession, error) {
+	const op = "services.refresh_session.GetAllUserRefreshSessions"
 
 	sessions, err := s.refreshSessionRepo.GetUserRefreshSessions(ctx, userId)
 	if err != nil {
@@ -69,15 +69,26 @@ func (s *RefreshSessionService) getAllUserRefreshSessions(ctx context.Context, u
 	return sessions, nil
 }
 
-func (s *RefreshSessionService) deleteEarliestRefreshSession(ctx context.Context, sessions []models.RefreshSession) error {
-	const op = "services.refresh_session.deleteEarliestRefreshSession"
+func (s *RefreshSessionService) DeleteEarliestRefreshSession(ctx context.Context, sessions []models.RefreshSession) error {
+	const op = "services.refresh_session.DeleteEarliestRefreshSession"
 
 	// sort sessions in ascending order
 	sort.Slice(sessions, func(i, j int) bool {
 		return sessions[i].ExpiresIn.Before(sessions[j].ExpiresIn)
 	})
 
-	err := s.refreshSessionRepo.DeleteRefreshSession(ctx, sessions[0].Id)
+	err := s.refreshSessionRepo.DeleteRefreshSession(ctx, sessions[0].RefreshToken)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
+func (s *RefreshSessionService) DeleteRefreshSession(ctx context.Context, refreshToken string) error {
+	const op = "services.refresh_session.DeleteRefreshSession"
+
+	err := s.refreshSessionRepo.DeleteRefreshSession(ctx, refreshToken)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}

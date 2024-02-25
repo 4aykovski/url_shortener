@@ -1,10 +1,11 @@
-package handlers
+package handler
 
 import (
 	"context"
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	resp "github.com/4aykovski/learning/golang/rest/internal/lib/api/response"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/logger/slogHelper"
@@ -16,10 +17,16 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+const (
+	refreshCookieName = "refreshToken"
+	refreshCookiePath = "/api/v1/users/auth"
+)
+
 //go:generate go run github.com/vektra/mockery/v2@v2.28.2 --name UserService
 type UserService interface {
 	SignUp(ctx context.Context, input services.UserSignUpInput) error
 	SignIn(ctx context.Context, input services.UserSignInInput) (*services.Tokens, error)
+	Logout(ctx context.Context, refreshToken string) error
 }
 
 type UserHandler struct {
@@ -43,9 +50,9 @@ type userSignUpInput struct {
 	Password string `json:"password" validate:"required,min=8,max=72,containsany=!*&^?#@)(-+=$_"`
 }
 
-func (h *UserHandler) UserSignUp(log *slog.Logger) http.HandlerFunc {
+func (h *UserHandler) SignUp(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "handlers.v1.user.SignUp"
+		const op = "v1.handler.user.SignUp"
 
 		log = log.With(
 			slog.String("op", op),
@@ -111,9 +118,9 @@ type tokenResponse struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
-func (h *UserHandler) UserSignIn(log *slog.Logger) http.HandlerFunc {
+func (h *UserHandler) SignIn(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "handlers.v1.user.userSignIn"
+		const op = "v1.handler.user.SignIn"
 
 		log.With(
 			slog.String("op", op),
@@ -161,6 +168,10 @@ func (h *UserHandler) UserSignIn(log *slog.Logger) http.HandlerFunc {
 			return
 		}
 
+		// TODO: secure - true в прод
+		refreshCookie := h.newRefreshCookie(tokens.RefreshToken, tokens.ExpiresIn)
+		http.SetCookie(w, refreshCookie)
+
 		log.Info("successfully signed in", slog.String("login", inp.Login))
 
 		render.JSON(w, r, tokenResponse{
@@ -171,14 +182,49 @@ func (h *UserHandler) UserSignIn(log *slog.Logger) http.HandlerFunc {
 	}
 }
 
-func (h *UserHandler) UserSignOut(log *slog.Logger) http.HandlerFunc {
+func (h *UserHandler) Logout(log *slog.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie(refreshCookieName)
+		if err != nil {
+			log.Info("refreshCookie is not specified")
+
+			render.Status(r, http.StatusBadRequest)
+			render.JSON(w, r, resp.WrongCredentialsError())
+			return
+		}
+
+		err = h.UserService.Logout(r.Context(), cookie.Value)
+		if err != nil {
+			log.Error("can't logout")
+
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, resp.InternalError())
+			return
+		}
+
+		refreshCookie := h.newRefreshCookie("", time.Unix(0, 0))
+		http.SetCookie(w, refreshCookie)
+
+		log.Info("successfully logged out")
+
+		render.JSON(w, r, resp.OK())
+	}
+}
+
+func (h *UserHandler) Refresh(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 	}
 }
 
-func (h *UserHandler) UserRefresh(log *slog.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
+func (h *UserHandler) newRefreshCookie(refreshToken string, time time.Time) *http.Cookie {
+	return &http.Cookie{
+		Name:     refreshCookieName,
+		Value:    refreshToken,
+		Expires:  time,
+		Path:     refreshCookiePath,
+		Secure:   false,
+		HttpOnly: true,
+		SameSite: 3,
 	}
 }
