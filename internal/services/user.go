@@ -54,17 +54,19 @@ type UserSignUpInput struct {
 
 func NewUserService(
 	userRepo userRepository,
+	refreshSessionService refreshSessionService,
 	hasher passHasher,
 	tokenManager tokenManager,
 	accessTokenTTL time.Duration,
 	refreshTokenTTL time.Duration,
 ) *UserService {
 	return &UserService{
-		userRepo:        userRepo,
-		hasher:          hasher,
-		tokenManager:    tokenManager,
-		accessTokenTTL:  accessTokenTTL,
-		refreshTokenTTL: refreshTokenTTL,
+		userRepo:              userRepo,
+		refreshSessionService: refreshSessionService,
+		hasher:                hasher,
+		tokenManager:          tokenManager,
+		accessTokenTTL:        accessTokenTTL,
+		refreshTokenTTL:       refreshTokenTTL,
 	}
 }
 

@@ -48,7 +48,8 @@ func main() {
 	h := hasher.NewBcryptHasher()
 	tM := tokenManager.New(cfg.Secret)
 
-	userService := services.NewUserService(userRepo, refreshRepo, h, tM, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
+	refreshService := services.NewRefreshSessionService(refreshRepo, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
+	userService := services.NewUserService(userRepo, refreshService, h, tM, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
 
 	// init router: chi, "chi render"
 
@@ -85,7 +86,13 @@ func setupLogger(env string) *slog.Logger {
 	case envLocal:
 		log = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	case envDev:
-		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+		lumber := &lumberjack.Logger{
+			Filename:   "logs/app.log",
+			MaxSize:    10,
+			MaxBackups: 3,
+			MaxAge:     7,
+		}
+		log = slog.New(slog.NewJSONHandler(lumber, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	case envProd:
 		lumber := &lumberjack.Logger{
 			Filename:   "logs/app.log",

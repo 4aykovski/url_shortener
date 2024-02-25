@@ -72,6 +72,7 @@ func (s *RefreshSessionService) getAllUserRefreshSessions(ctx context.Context, u
 func (s *RefreshSessionService) deleteEarliestRefreshSession(ctx context.Context, sessions []models.RefreshSession) error {
 	const op = "services.refresh_session.deleteEarliestRefreshSession"
 
+	// sort sessions in ascending order
 	sort.Slice(sessions, func(i, j int) bool {
 		return sessions[i].ExpiresIn.Before(sessions[j].ExpiresIn)
 	})
