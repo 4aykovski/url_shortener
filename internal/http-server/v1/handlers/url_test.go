@@ -1,4 +1,4 @@
-package v1
+package handlers
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/4aykovski/learning/golang/rest/internal/http-server/handlers/v1/mocks"
+	"github.com/4aykovski/learning/golang/rest/internal/http-server/v1/handlers/mocks"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/api"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/logger/handlers/slogdiscard"
 	"github.com/4aykovski/learning/golang/rest/internal/repository"
@@ -42,9 +42,9 @@ func TestRedirectHandler(t *testing.T) {
 					Return(tc.url, tc.mockError).Once()
 			}
 
-			h := New(urlRepo, nil, nil)
+			h := NewUrlHandler(urlRepo)
 			r := chi.NewRouter()
-			r.Get("/{alias}", h.urlRedirect(slogdiscard.NewDiscardLogger()))
+			r.Get("/{alias}", h.UrlRedirect(slogdiscard.NewDiscardLogger()))
 
 			ts := httptest.NewServer(r)
 			defer ts.Close()
@@ -110,7 +110,7 @@ func TestSaveHandler(t *testing.T) {
 					Once()
 			}
 
-			handler := New(urlRepo, nil, nil).urlSave(slogdiscard.NewDiscardLogger())
+			handler := NewUrlHandler(urlRepo).UrlSave(slogdiscard.NewDiscardLogger())
 
 			input := fmt.Sprintf(`{"url": "%s", "alias": "%s"}`, tc.url, tc.alias)
 
@@ -168,7 +168,8 @@ func TestDeleteHandler(t *testing.T) {
 			}
 
 			r := chi.NewRouter()
-			r.Delete("/{alias}", New(urlRepo, nil, nil).urlDelete(slogdiscard.NewDiscardLogger()))
+			h := NewUrlHandler(urlRepo).UrlDelete(slogdiscard.NewDiscardLogger())
+			r.Delete("/{alias}", h)
 
 			ts := httptest.NewServer(r)
 			defer ts.Close()

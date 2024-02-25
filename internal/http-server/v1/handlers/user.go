@@ -1,12 +1,14 @@
-package v1
+package handlers
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
 
 	resp "github.com/4aykovski/learning/golang/rest/internal/lib/api/response"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/logger/slogHelper"
+	tokenManager "github.com/4aykovski/learning/golang/rest/internal/lib/token-manager"
 	"github.com/4aykovski/learning/golang/rest/internal/repository"
 	"github.com/4aykovski/learning/golang/rest/internal/services"
 	"github.com/go-chi/chi/v5/middleware"
@@ -14,12 +16,34 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.28.2 --name UserService
+type UserService interface {
+	SignUp(ctx context.Context, input services.UserSignUpInput) error
+	SignIn(ctx context.Context, input services.UserSignInInput) (*services.Tokens, error)
+}
+
+type UserHandler struct {
+	UserService UserService
+
+	tokenManager tokenManager.TokenManager
+}
+
+func NewUserHandler(
+	userService UserService,
+	tokenManager tokenManager.TokenManager,
+) *UserHandler {
+	return &UserHandler{
+		UserService:  userService,
+		tokenManager: tokenManager,
+	}
+}
+
 type userSignUpInput struct {
 	Login    string `json:"login" validate:"required,min=4,max=128"`
 	Password string `json:"password" validate:"required,min=8,max=72,containsany=!*&^?#@)(-+=$_"`
 }
 
-func (h *Handler) userSignUp(log *slog.Logger) http.HandlerFunc {
+func (h *UserHandler) UserSignUp(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.v1.user.SignUp"
 
@@ -87,7 +111,7 @@ type tokenResponse struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
-func (h *Handler) userSignIn(log *slog.Logger) http.HandlerFunc {
+func (h *UserHandler) UserSignIn(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.v1.user.userSignIn"
 
@@ -147,13 +171,13 @@ func (h *Handler) userSignIn(log *slog.Logger) http.HandlerFunc {
 	}
 }
 
-func (h *Handler) userSignOut(log *slog.Logger) http.HandlerFunc {
+func (h *UserHandler) UserSignOut(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 	}
 }
 
-func (h *Handler) userRefresh(log *slog.Logger) http.HandlerFunc {
+func (h *UserHandler) UserRefresh(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 	}

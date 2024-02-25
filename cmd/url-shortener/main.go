@@ -6,13 +6,12 @@ import (
 	"os"
 
 	"github.com/4aykovski/learning/golang/rest/internal/config"
-	v1 "github.com/4aykovski/learning/golang/rest/internal/http-server/handlers/v1"
+	"github.com/4aykovski/learning/golang/rest/internal/http-server/v1"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/hasher"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/logger/slogHelper"
 	tokenManager "github.com/4aykovski/learning/golang/rest/internal/lib/token-manager"
 	"github.com/4aykovski/learning/golang/rest/internal/repository/Postgres"
 	"github.com/4aykovski/learning/golang/rest/internal/services"
-	"github.com/go-chi/chi/v5"
 	"github.com/natefinch/lumberjack"
 )
 
@@ -28,44 +27,39 @@ func main() {
 	cfg := config.MustLoad()
 
 	// init logger: slog ? grafana ? kibana ? grep
-
 	log := setupLogger(cfg.Env)
 	log.Info("starting url-shortener", slog.String("env", cfg.Env))
 	log.Debug("debug messages are enabled")
 
 	// init db: Postgres
-
 	pq, err := Postgres.New(cfg.Postgres)
 	if err != nil {
 		log.Error("failed to init Postgres database", slogHelper.Err(err))
 		os.Exit(1)
 	}
 
+	// init repositories
 	urlRepo := Postgres.NewUrlRepository(pq)
 	userRepo := Postgres.NewUserRepository(pq)
 	refreshRepo := Postgres.NewRefreshSessionRepository(pq)
 
+	// init additional stuff
 	h := hasher.NewBcryptHasher()
 	tM := tokenManager.New(cfg.Secret)
 
+	// init services
 	refreshService := services.NewRefreshSessionService(refreshRepo, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
 	userService := services.NewUserService(userRepo, refreshService, h, tM, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
 
 	// init router: chi, "chi render"
-
-	router := chi.NewRouter()
-
-	handler := v1.New(urlRepo, userService, tM)
-	handler.InitMiddlewares(log, router)
-	handler.InitRoutes(log, router)
+	mux := v1.NewMux(log, urlRepo, userService, tM)
 
 	// run server
-
 	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))
 
 	srv := &http.Server{
 		Addr:         cfg.HTTPServer.Address,
-		Handler:      router,
+		Handler:      mux,
 		ReadTimeout:  cfg.HTTPServer.Timeout,
 		WriteTimeout: cfg.HTTPServer.Timeout,
 		IdleTimeout:  cfg.HTTPServer.IdleTimeout,

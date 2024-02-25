@@ -6,7 +6,7 @@ import (
 	"path"
 	"testing"
 
-	v1 "github.com/4aykovski/learning/golang/rest/internal/http-server/handlers/v1"
+	"github.com/4aykovski/learning/golang/rest/internal/http-server/v1/handlers"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/api"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/random"
 	"github.com/brianvoe/gofakeit/v6"
@@ -27,7 +27,7 @@ func TestUrlShortener_HappyPath(t *testing.T) {
 	e := httpexpect.Default(t, u.String())
 
 	e.POST("/url/save").
-		WithJSON(v1.UrlSaveInput{
+		WithJSON(handlers.UrlSaveInput{
 			URL:   gofakeit.URL(),
 			Alias: random.NewRandomString(10),
 		}).
@@ -71,7 +71,7 @@ func TestURLShortener_SaveRedirectDelete(t *testing.T) {
 
 			// save
 			res := e.POST("/url/save").
-				WithJSON(v1.UrlSaveInput{
+				WithJSON(handlers.UrlSaveInput{
 					URL:   tc.url,
 					Alias: tc.alias,
 				}).

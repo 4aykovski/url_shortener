@@ -1,4 +1,4 @@
-package v1
+package handlers
 
 import (
 	"errors"
@@ -8,12 +8,34 @@ import (
 	resp "github.com/4aykovski/learning/golang/rest/internal/lib/api/response"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/logger/slogHelper"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/random"
+	tokenManager "github.com/4aykovski/learning/golang/rest/internal/lib/token-manager"
 	"github.com/4aykovski/learning/golang/rest/internal/repository"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 )
+
+//go:generate go run github.com/vektra/mockery/v2@v2.28.2 --name UrlRepository
+type UrlRepository interface {
+	SaveURL(urlToSave string, alias string) error
+	GetURL(alias string) (string, error)
+	DeleteURL(alias string) error
+}
+
+type UrlHandler struct {
+	UrlRepo UrlRepository
+
+	tokenManager tokenManager.TokenManager
+}
+
+func NewUrlHandler(
+	UrlRepo UrlRepository,
+) *UrlHandler {
+	return &UrlHandler{
+		UrlRepo: UrlRepo,
+	}
+}
 
 type UrlSaveInput struct {
 	URL   string `json:"url" validate:"required,url"`
@@ -27,7 +49,7 @@ type aliasResponse struct {
 
 const aliasLength = 6
 
-func (h *Handler) urlSave(log *slog.Logger) http.HandlerFunc {
+func (h *UrlHandler) UrlSave(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.v1.url.Save"
 
@@ -87,7 +109,7 @@ func (h *Handler) urlSave(log *slog.Logger) http.HandlerFunc {
 	}
 }
 
-func (h *Handler) urlRedirect(log *slog.Logger) http.HandlerFunc {
+func (h *UrlHandler) UrlRedirect(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.v1.url.Redirect"
 
@@ -127,7 +149,7 @@ func (h *Handler) urlRedirect(log *slog.Logger) http.HandlerFunc {
 	}
 }
 
-func (h *Handler) urlDelete(log *slog.Logger) http.HandlerFunc {
+func (h *UrlHandler) UrlDelete(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.v1.url.Delete"
 

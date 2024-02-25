@@ -1,4 +1,4 @@
-package v1
+package handlers
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/4aykovski/learning/golang/rest/internal/http-server/handlers/v1/mocks"
+	"github.com/4aykovski/learning/golang/rest/internal/http-server/v1/handlers/mocks"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/api"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/api/response"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/logger/handlers/slogdiscard"
@@ -141,7 +141,7 @@ func TestSignUpHandler(t *testing.T) {
 			}
 
 			r := chi.NewRouter()
-			h := New(nil, userService, nil).userSignUp(slogdiscard.NewDiscardLogger())
+			h := NewUserHandler(userService, nil).UserSignUp(slogdiscard.NewDiscardLogger())
 			r.Post("/api/v1/users/signUp", h)
 
 			ts := httptest.NewServer(r)
@@ -255,7 +255,7 @@ func TestSignInHandler(t *testing.T) {
 			}
 
 			r := chi.NewRouter()
-			h := New(nil, userService, nil).userSignIn(slogdiscard.NewDiscardLogger())
+			h := NewUserHandler(userService, nil).UserSignIn(slogdiscard.NewDiscardLogger())
 			r.Post("/api/v1/users/signIn", h)
 
 			ts := httptest.NewServer(r)
