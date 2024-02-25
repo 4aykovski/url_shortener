@@ -201,7 +201,7 @@ func (h *UserHandler) Logout(log *slog.Logger) http.HandlerFunc {
 		if err != nil {
 			var res userLogoutInput
 			err = render.DecodeJSON(r.Body, &res)
-			if err != nil {
+			if err != nil || res.RefreshToken == "" {
 				log.Info("refreshCookie is not specified")
 
 				render.Status(r, http.StatusBadRequest)
@@ -216,7 +216,15 @@ func (h *UserHandler) Logout(log *slog.Logger) http.HandlerFunc {
 
 		err = h.UserService.Logout(r.Context(), token)
 		if err != nil {
-			log.Error("can't logout")
+			if errors.Is(err, repository.ErrRefreshSessionNotFound) {
+				log.Info("can't find session")
+
+				render.Status(r, http.StatusBadRequest)
+				render.JSON(w, r, resp.WrongCredentialsError())
+				return
+			}
+
+			log.Error("can't logout", slogHelper.Err(err))
 
 			render.Status(r, http.StatusInternalServerError)
 			render.JSON(w, r, resp.InternalError())
@@ -250,14 +258,13 @@ func (h *UserHandler) Refresh(log *slog.Logger) http.HandlerFunc {
 		if err != nil {
 			var res userRefreshInput
 			err = render.DecodeJSON(r.Body, &res)
-			if err != nil {
+			if err != nil || res.RefreshToken == "" {
 				log.Info("refreshCookie is not specified")
 
 				render.Status(r, http.StatusBadRequest)
 				render.JSON(w, r, resp.WrongCredentialsError())
 				return
 			}
-
 			token = res.RefreshToken
 		} else {
 			token = cookie.Value
@@ -265,6 +272,14 @@ func (h *UserHandler) Refresh(log *slog.Logger) http.HandlerFunc {
 
 		tokens, err := h.UserService.Refresh(r.Context(), token)
 		if err != nil {
+			if errors.Is(err, repository.ErrRefreshSessionNotFound) {
+				log.Info("can't find session")
+
+				render.Status(r, http.StatusBadRequest)
+				render.JSON(w, r, resp.WrongCredentialsError())
+				return
+			}
+
 			log.Error("can't refresh tokens", slogHelper.Err(err))
 
 			render.Status(r, http.StatusInternalServerError)

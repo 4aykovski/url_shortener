@@ -58,7 +58,7 @@ func (repo *RefreshSessionRepositoryPostgres) DeleteRefreshSession(ctx context.C
 	}
 
 	if deleted == 0 {
-		return repository.ErrURLNotFound
+		return repository.ErrRefreshSessionNotFound
 	}
 
 	if err != nil {
