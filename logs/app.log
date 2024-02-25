@@ -1,9 +1,0 @@
-{"time":"2024-02-23T08:24:12.320604424+03:00","level":"INFO","msg":"starting url-shortener","env":"prod"}
-{"time":"2024-02-23T08:24:12.347477524+03:00","level":"INFO","msg":"Logger middleware enabled","component":"middleware/Logger"}
-{"time":"2024-02-23T08:24:12.347512124+03:00","level":"INFO","msg":"starting server","address":"localhost:8080"}
-{"time":"2024-02-23T13:29:33.641422434+03:00","level":"INFO","msg":"starting url-shortener","env":"prod"}
-{"time":"2024-02-23T13:29:33.698098935+03:00","level":"INFO","msg":"Logger middleware enabled","component":"middleware/Logger"}
-{"time":"2024-02-23T13:29:33.698170035+03:00","level":"INFO","msg":"starting server","address":"localhost:8080"}
-{"time":"2024-02-23T13:30:06.959350809+03:00","level":"INFO","msg":"starting url-shortener","env":"prod"}
-{"time":"2024-02-23T13:30:10.475475457+03:00","level":"INFO","msg":"Logger middleware enabled","component":"middleware/Logger"}
-{"time":"2024-02-23T13:30:11.186845567+03:00","level":"INFO","msg":"starting server","address":"localhost:8080"}

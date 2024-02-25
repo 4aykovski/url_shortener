@@ -8,15 +8,21 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-type TokenManager struct {
+type TokenManager interface {
+	NewJWT(userId string, ttl time.Duration) (string, error)
+	Parse(accessToken string) (string, error)
+	NewRefreshToken() (string, error)
+}
+
+type Manager struct {
 	secret string
 }
 
-func New(secret string) *TokenManager {
-	return &TokenManager{secret: secret}
+func New(secret string) *Manager {
+	return &Manager{secret: secret}
 }
 
-func (m *TokenManager) NewJWT(userId string, ttl time.Duration) (string, error) {
+func (m *Manager) NewJWT(userId string, ttl time.Duration) (string, error) {
 	const op = "lib.token-manager.token_manager.Parse"
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
@@ -32,7 +38,7 @@ func (m *TokenManager) NewJWT(userId string, ttl time.Duration) (string, error) 
 	return completeToken, nil
 }
 
-func (m *TokenManager) Parse(accessToken string) (string, error) {
+func (m *Manager) Parse(accessToken string) (string, error) {
 	const op = "lib.token-manager.token_manager.Parse"
 
 	token, err := jwt.Parse(accessToken, func(token *jwt.Token) (i interface{}, err error) {
@@ -54,7 +60,7 @@ func (m *TokenManager) Parse(accessToken string) (string, error) {
 	return claims["sub"].(string), nil
 }
 
-func (m *TokenManager) NewRefreshToken() (string, error) {
+func (m *Manager) NewRefreshToken() (string, error) {
 	const op = "lib.token-manager.token_manager.NewRefreshToken"
 
 	b := make([]byte, 32)

@@ -19,6 +19,7 @@ const (
 	DecodeErrorMessage           = "failed to decode request body"
 	InvalidRequestErrorMessage   = "invalid request"
 	WrongCredentialsErrorMessage = "wrong credentials"
+	UnauthorizedErrorMessage     = "unauthorized"
 )
 
 func OK() Response {
@@ -48,6 +49,10 @@ func InvalidRequestError() Response {
 
 func WrongCredentialsError() Response {
 	return Error(WrongCredentialsErrorMessage)
+}
+
+func UnauthorizedError() Response {
+	return Error(UnauthorizedErrorMessage)
 }
 
 func ValidationError(errs validator.ValidationErrors) Response {

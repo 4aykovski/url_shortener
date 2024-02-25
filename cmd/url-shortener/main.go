@@ -55,7 +55,7 @@ func main() {
 
 	router := chi.NewRouter()
 
-	handler := v1.New(urlRepo, userService)
+	handler := v1.New(urlRepo, userService, tM)
 	handler.InitMiddlewares(log, router)
 	handler.InitRoutes(log, router)
 

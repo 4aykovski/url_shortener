@@ -141,7 +141,7 @@ func TestSignUpHandler(t *testing.T) {
 			}
 
 			r := chi.NewRouter()
-			h := New(nil, userService).userSignUp(slogdiscard.NewDiscardLogger())
+			h := New(nil, userService, nil).userSignUp(slogdiscard.NewDiscardLogger())
 			r.Post("/api/v1/users/signUp", h)
 
 			ts := httptest.NewServer(r)
@@ -255,7 +255,7 @@ func TestSignInHandler(t *testing.T) {
 			}
 
 			r := chi.NewRouter()
-			h := New(nil, userService).userSignIn(slogdiscard.NewDiscardLogger())
+			h := New(nil, userService, nil).userSignIn(slogdiscard.NewDiscardLogger())
 			r.Post("/api/v1/users/signIn", h)
 
 			ts := httptest.NewServer(r)

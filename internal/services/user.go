@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	tokenManager "github.com/4aykovski/learning/golang/rest/internal/lib/token-manager"
 	"github.com/4aykovski/learning/golang/rest/internal/models"
 )
 
@@ -23,13 +24,6 @@ type passHasher interface {
 	Hash(password string) (string, error)
 	CheckPassword(password string, hashedPassword string) bool
 }
-
-type tokenManager interface {
-	NewJWT(userId string, ttl time.Duration) (string, error)
-	Parse(accessToken string) (string, error)
-	NewRefreshToken() (string, error)
-}
-
 type refreshSessionService interface {
 	createRefreshSession(ctx context.Context, userId int, refreshToken string) error
 	getAllUserRefreshSessions(ctx context.Context, userId int) ([]models.RefreshSession, error)
@@ -41,7 +35,7 @@ type UserService struct {
 	refreshSessionService refreshSessionService
 
 	hasher       passHasher
-	tokenManager tokenManager
+	tokenManager tokenManager.TokenManager
 
 	accessTokenTTL  time.Duration
 	refreshTokenTTL time.Duration
@@ -56,7 +50,7 @@ func NewUserService(
 	userRepo userRepository,
 	refreshSessionService refreshSessionService,
 	hasher passHasher,
-	tokenManager tokenManager,
+	tokenManager tokenManager.TokenManager,
 	accessTokenTTL time.Duration,
 	refreshTokenTTL time.Duration,
 ) *UserService {
