@@ -8,6 +8,7 @@ import (
 
 	tokenManager "github.com/4aykovski/learning/golang/rest/internal/lib/token-manager"
 	"github.com/4aykovski/learning/golang/rest/internal/models"
+	"github.com/4aykovski/learning/golang/rest/internal/repository"
 )
 
 type userRepository interface {
@@ -94,14 +95,9 @@ var ErrWrongCred = errors.New("wrong credentials")
 func (s *UserService) SignIn(ctx context.Context, input UserSignInInput) (*tokenManager.Tokens, error) {
 	const op = "services.user.SignIn"
 
-	user, err := s.userRepo.GetUserByLogin(ctx, input.Login)
+	user, err := s.checkCred(ctx, input)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	ok := s.hasher.CheckPassword(input.Password, user.Password)
-	if !ok {
-		return nil, fmt.Errorf("%s: %w", op, ErrWrongCred)
 	}
 
 	sessions, err := s.refreshSessionService.GetAllUserRefreshSessions(ctx, user.Id)
@@ -149,4 +145,25 @@ func (s *UserService) Refresh(ctx context.Context, refreshToken string) (*tokenM
 	}
 
 	return tokens, nil
+}
+
+// checkCred checks if credentials are valid. If it's valid returns user, otherwise returns nil and error
+func (s *UserService) checkCred(ctx context.Context, input UserSignInInput) (*models.User, error) {
+	const op = "services.user.checkCred"
+
+	user, err := s.userRepo.GetUserByLogin(ctx, input.Login)
+	if err != nil {
+		if errors.Is(err, repository.ErrUserNotFound) {
+			return nil, fmt.Errorf("%s: %w", op, ErrWrongCred)
+		}
+
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	ok := s.hasher.CheckPassword(input.Password, user.Password)
+	if !ok {
+		return nil, fmt.Errorf("%s: %w", op, ErrWrongCred)
+	}
+
+	return user, nil
 }
