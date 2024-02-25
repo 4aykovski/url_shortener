@@ -167,6 +167,7 @@ func TestSignInHandler(t *testing.T) {
 	tests := []struct {
 		name      string
 		input     userSignInInput
+		tokens    services.Tokens
 		status    string
 		respError string
 		mockError error
@@ -177,6 +178,10 @@ func TestSignInHandler(t *testing.T) {
 				Login:    "ssff23",
 				Password: "qwerty123!4",
 			},
+			tokens: services.Tokens{
+				AccessToken:  "random string",
+				RefreshToken: "random string",
+			},
 			status: response.StatusOK,
 		},
 		{
@@ -185,6 +190,7 @@ func TestSignInHandler(t *testing.T) {
 				Login:    "1",
 				Password: "1!4",
 			},
+			tokens:    services.Tokens{},
 			status:    response.StatusError,
 			respError: response.WrongCredentialsErrorMessage,
 			mockError: repository.ErrUserNotFound,
@@ -195,6 +201,7 @@ func TestSignInHandler(t *testing.T) {
 				Login:    "ssff23",
 				Password: "qwerty123!4",
 			},
+			tokens:    services.Tokens{},
 			status:    response.StatusError,
 			respError: response.InternalErrorMessage,
 			mockError: errors.New("unexpected error"),
@@ -205,6 +212,7 @@ func TestSignInHandler(t *testing.T) {
 				Login:    "",
 				Password: "",
 			},
+			tokens:    services.Tokens{},
 			status:    response.StatusError,
 			respError: "field Login is a required field, field Password is a required field",
 		},
@@ -215,6 +223,7 @@ func TestSignInHandler(t *testing.T) {
 				Login:    "",
 				Password: "qwerty123!4",
 			},
+			tokens:    services.Tokens{},
 			status:    response.StatusError,
 			respError: "field Login is a required field",
 		},
@@ -224,6 +233,7 @@ func TestSignInHandler(t *testing.T) {
 				Login:    "ssff23",
 				Password: "",
 			},
+			tokens:    services.Tokens{},
 			status:    response.StatusError,
 			respError: "field Password is a required field",
 		},
@@ -241,7 +251,7 @@ func TestSignInHandler(t *testing.T) {
 
 			if tc.respError == "" || tc.mockError != nil {
 				userService.On("SignIn", mock.Anything, inp).
-					Return(tc.mockError).Once()
+					Return(&tc.tokens, tc.mockError).Once()
 			}
 
 			r := chi.NewRouter()
@@ -263,6 +273,8 @@ func TestSignInHandler(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.status, resp.Status)
 			require.Equal(t, tc.respError, resp.Error)
+			require.Equal(t, tc.tokens.AccessToken, resp.AccessToken)
+			require.Equal(t, tc.tokens.RefreshToken, resp.RefreshToken)
 		})
 	}
 }
