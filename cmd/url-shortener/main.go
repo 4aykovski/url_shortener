@@ -48,8 +48,8 @@ func main() {
 	tM := tokenManager.New(cfg.Secret)
 
 	// init services
-	refreshService := services.NewRefreshSessionService(refreshRepo, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
-	userService := services.NewUserService(userRepo, refreshService, h, tM, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
+	refreshService := services.NewRefreshSessionService(refreshRepo, tM, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
+	userService := services.NewUserService(userRepo, refreshService, h, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
 
 	// init router: chi, "chi render"
 	mux := v1.NewMux(log, urlRepo, userService, tM)

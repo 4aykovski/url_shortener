@@ -25,8 +25,9 @@ const (
 //go:generate go run github.com/vektra/mockery/v2@v2.28.2 --name UserService
 type UserService interface {
 	SignUp(ctx context.Context, input services.UserSignUpInput) error
-	SignIn(ctx context.Context, input services.UserSignInInput) (*services.Tokens, error)
+	SignIn(ctx context.Context, input services.UserSignInInput) (*tokenManager.Tokens, error)
 	Logout(ctx context.Context, refreshToken string) error
+	Refresh(ctx context.Context, refreshToken string) (*tokenManager.Tokens, error)
 }
 
 type UserHandler struct {
@@ -213,7 +214,35 @@ func (h *UserHandler) Logout(log *slog.Logger) http.HandlerFunc {
 
 func (h *UserHandler) Refresh(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie(refreshCookieName)
+		if err != nil {
+			log.Info("refreshCookie is not specified")
 
+			render.Status(r, http.StatusBadRequest)
+			render.JSON(w, r, resp.WrongCredentialsError())
+			return
+		}
+
+		tokens, err := h.UserService.Refresh(r.Context(), cookie.Value)
+		if err != nil {
+			log.Error("can't refresh tokens", slogHelper.Err(err))
+
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, resp.InternalError())
+			return
+		}
+
+		// TODO: secure - true в прод
+		refreshCookie := h.newRefreshCookie(tokens.RefreshToken, tokens.ExpiresIn)
+		http.SetCookie(w, refreshCookie)
+
+		log.Info("successfully refreshed tokens")
+
+		render.JSON(w, r, tokenResponse{
+			Response:     resp.OK(),
+			AccessToken:  tokens.AccessToken,
+			RefreshToken: tokens.RefreshToken,
+		})
 	}
 }
 

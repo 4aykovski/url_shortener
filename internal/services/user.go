@@ -25,18 +25,18 @@ type passHasher interface {
 	CheckPassword(password string, hashedPassword string) bool
 }
 type refreshSessionService interface {
-	CreateRefreshSession(ctx context.Context, userId int, refreshToken string) error
+	CreateRefreshSession(ctx context.Context, userId int) (*tokenManager.Tokens, error)
 	GetAllUserRefreshSessions(ctx context.Context, userId int) ([]models.RefreshSession, error)
 	DeleteEarliestRefreshSession(ctx context.Context, sessions []models.RefreshSession) error
 	DeleteRefreshSession(ctx context.Context, refreshToken string) error
+	ValidateRefreshSession(ctx context.Context, refreshToken string) (int, error)
 }
 
 type UserService struct {
 	userRepo              userRepository
 	refreshSessionService refreshSessionService
 
-	hasher       passHasher
-	tokenManager tokenManager.TokenManager
+	hasher passHasher
 
 	accessTokenTTL  time.Duration
 	refreshTokenTTL time.Duration
@@ -51,7 +51,6 @@ func NewUserService(
 	userRepo userRepository,
 	refreshSessionService refreshSessionService,
 	hasher passHasher,
-	tokenManager tokenManager.TokenManager,
 	accessTokenTTL time.Duration,
 	refreshTokenTTL time.Duration,
 ) *UserService {
@@ -59,7 +58,6 @@ func NewUserService(
 		userRepo:              userRepo,
 		refreshSessionService: refreshSessionService,
 		hasher:                hasher,
-		tokenManager:          tokenManager,
 		accessTokenTTL:        accessTokenTTL,
 		refreshTokenTTL:       refreshTokenTTL,
 	}
@@ -91,15 +89,9 @@ type UserSignInInput struct {
 	Password string
 }
 
-type Tokens struct {
-	AccessToken  string
-	RefreshToken string
-	ExpiresIn    time.Time
-}
-
 var ErrWrongCred = errors.New("wrong credentials")
 
-func (s *UserService) SignIn(ctx context.Context, input UserSignInInput) (*Tokens, error) {
+func (s *UserService) SignIn(ctx context.Context, input UserSignInInput) (*tokenManager.Tokens, error) {
 	const op = "services.user.SignIn"
 
 	user, err := s.userRepo.GetUserByLogin(ctx, input.Login)
@@ -124,7 +116,7 @@ func (s *UserService) SignIn(ctx context.Context, input UserSignInInput) (*Token
 		}
 	}
 
-	tokens, err := s.createTokensPair(ctx, user.Id)
+	tokens, err := s.refreshSessionService.CreateRefreshSession(ctx, user.Id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -143,29 +135,18 @@ func (s *UserService) Logout(ctx context.Context, refreshToken string) error {
 	return nil
 }
 
-func (s *UserService) createTokensPair(ctx context.Context, userId int) (*Tokens, error) {
-	const op = "services.user.createTokensPair"
+func (s *UserService) Refresh(ctx context.Context, refreshToken string) (*tokenManager.Tokens, error) {
+	const op = "services.user.Refresh"
 
-	accessToken, err := s.tokenManager.NewJWT(string(rune(userId)), s.accessTokenTTL)
+	userId, err := s.refreshSessionService.ValidateRefreshSession(ctx, refreshToken)
+	if err != nil {
+		return &tokenManager.Tokens{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	tokens, err := s.refreshSessionService.CreateRefreshSession(ctx, userId)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	refreshToken, err := s.tokenManager.NewRefreshToken()
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	err = s.refreshSessionService.CreateRefreshSession(ctx, userId, refreshToken)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	tokens := Tokens{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		ExpiresIn:    time.Now().Add(s.refreshTokenTTL),
-	}
-
-	return &tokens, nil
+	return tokens, nil
 }

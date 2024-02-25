@@ -9,33 +9,42 @@ import (
 )
 
 type TokenManager interface {
-	NewJWT(userId string, ttl time.Duration) (string, error)
+	CreateTokensPair(userId string, ttl time.Duration) (*Tokens, error)
 	Parse(accessToken string) (string, error)
-	NewRefreshToken() (string, error)
 }
 
 type Manager struct {
 	secret string
 }
 
+type Tokens struct {
+	AccessToken  string
+	RefreshToken string
+	ExpiresIn    time.Time
+}
+
 func New(secret string) *Manager {
 	return &Manager{secret: secret}
 }
 
-func (m *Manager) NewJWT(userId string, ttl time.Duration) (string, error) {
-	const op = "lib.token-manager.token_manager.Parse"
+func (m *Manager) CreateTokensPair(userId string, ttl time.Duration) (*Tokens, error) {
+	const op = "lib.token-manager.token_manager.createTokensPair"
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
-		ExpiresAt: time.Now().Add(ttl).Unix(),
-		Subject:   userId,
-	})
-
-	completeToken, err := token.SignedString([]byte(m.secret))
+	accessToken, err := m.newJWT(userId, ttl)
 	if err != nil {
-		return "", fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return completeToken, nil
+	refreshToken, err := m.newRefreshToken()
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return &Tokens{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		ExpiresIn:    time.Now().Add(ttl),
+	}, nil
 }
 
 func (m *Manager) Parse(accessToken string) (string, error) {
@@ -60,8 +69,24 @@ func (m *Manager) Parse(accessToken string) (string, error) {
 	return claims["sub"].(string), nil
 }
 
-func (m *Manager) NewRefreshToken() (string, error) {
-	const op = "lib.token-manager.token_manager.NewRefreshToken"
+func (m *Manager) newJWT(userId string, ttl time.Duration) (string, error) {
+	const op = "lib.token-manager.token_manager.Parse"
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
+		ExpiresAt: time.Now().Add(ttl).Unix(),
+		Subject:   userId,
+	})
+
+	completeToken, err := token.SignedString([]byte(m.secret))
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	return completeToken, nil
+}
+
+func (m *Manager) newRefreshToken() (string, error) {
+	const op = "lib.token-manager.token_manager.newRefreshToken"
 
 	b := make([]byte, 32)
 

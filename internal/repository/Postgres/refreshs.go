@@ -89,16 +89,16 @@ func (repo *RefreshSessionRepositoryPostgres) UpdateRefreshSession(ctx context.C
 	return nil
 }
 
-func (repo *RefreshSessionRepositoryPostgres) GetRefreshSession(ctx context.Context, refreshTokenId int) (*models.RefreshSession, error) {
+func (repo *RefreshSessionRepositoryPostgres) GetRefreshSession(ctx context.Context, refreshToken string) (*models.RefreshSession, error) {
 	const op = "database.Postgres.RefreshSessionRepository.GetRefreshSession"
 
-	stmt, err := repo.postgres.db.Prepare("SELECT id, user_id, refresh_token, expires_in FROM refresh_sessions WHERE id = $1")
+	stmt, err := repo.postgres.db.Prepare("SELECT id, user_id, refresh_token, expires_in FROM refresh_sessions WHERE refresh_token = $1")
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	var refreshSession models.RefreshSession
-	err = stmt.QueryRowContext(ctx, refreshTokenId).Scan(
+	err = stmt.QueryRowContext(ctx, refreshToken).Scan(
 		&refreshSession.Id,
 		&refreshSession.UserId,
 		&refreshSession.RefreshToken,
