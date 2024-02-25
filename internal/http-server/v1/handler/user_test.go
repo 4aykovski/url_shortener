@@ -13,6 +13,7 @@ import (
 	"github.com/4aykovski/learning/golang/rest/internal/lib/api"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/api/response"
 	"github.com/4aykovski/learning/golang/rest/internal/lib/logger/handlers/slogdiscard"
+	tokenManager "github.com/4aykovski/learning/golang/rest/internal/lib/token-manager"
 	"github.com/4aykovski/learning/golang/rest/internal/repository"
 	"github.com/4aykovski/learning/golang/rest/internal/services"
 	"github.com/go-chi/chi/v5"
@@ -167,7 +168,7 @@ func TestSignInHandler(t *testing.T) {
 	tests := []struct {
 		name      string
 		input     userSignInInput
-		tokens    services.Tokens
+		tokens    tokenManager.Tokens
 		status    string
 		respError string
 		mockError error
@@ -178,7 +179,7 @@ func TestSignInHandler(t *testing.T) {
 				Login:    "ssff23",
 				Password: "qwerty123!4",
 			},
-			tokens: services.Tokens{
+			tokens: tokenManager.Tokens{
 				AccessToken:  "random string",
 				RefreshToken: "random string",
 			},
@@ -190,7 +191,7 @@ func TestSignInHandler(t *testing.T) {
 				Login:    "1",
 				Password: "1!4",
 			},
-			tokens:    services.Tokens{},
+			tokens:    tokenManager.Tokens{},
 			status:    response.StatusError,
 			respError: response.WrongCredentialsErrorMessage,
 			mockError: repository.ErrUserNotFound,
@@ -201,7 +202,7 @@ func TestSignInHandler(t *testing.T) {
 				Login:    "ssff23",
 				Password: "qwerty123!4",
 			},
-			tokens:    services.Tokens{},
+			tokens:    tokenManager.Tokens{},
 			status:    response.StatusError,
 			respError: response.InternalErrorMessage,
 			mockError: errors.New("unexpected error"),
@@ -212,7 +213,7 @@ func TestSignInHandler(t *testing.T) {
 				Login:    "",
 				Password: "",
 			},
-			tokens:    services.Tokens{},
+			tokens:    tokenManager.Tokens{},
 			status:    response.StatusError,
 			respError: "field Login is a required field, field Password is a required field",
 		},
@@ -223,7 +224,7 @@ func TestSignInHandler(t *testing.T) {
 				Login:    "",
 				Password: "qwerty123!4",
 			},
-			tokens:    services.Tokens{},
+			tokens:    tokenManager.Tokens{},
 			status:    response.StatusError,
 			respError: "field Login is a required field",
 		},
@@ -233,7 +234,7 @@ func TestSignInHandler(t *testing.T) {
 				Login:    "ssff23",
 				Password: "",
 			},
-			tokens:    services.Tokens{},
+			tokens:    tokenManager.Tokens{},
 			status:    response.StatusError,
 			respError: "field Password is a required field",
 		},
