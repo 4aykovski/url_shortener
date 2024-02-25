@@ -95,7 +95,7 @@ var ErrWrongCred = errors.New("wrong credentials")
 func (s *UserService) SignIn(ctx context.Context, input UserSignInInput) (*tokenManager.Tokens, error) {
 	const op = "services.user.SignIn"
 
-	user, err := s.checkCred(ctx, input)
+	user, err := s.getUserWithCreds(ctx, input)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -140,9 +140,9 @@ func (s *UserService) Refresh(ctx context.Context, refreshToken string) (*tokenM
 	return tokens, nil
 }
 
-// checkCred checks if credentials are valid. If it's valid returns user, otherwise returns nil and error
-func (s *UserService) checkCred(ctx context.Context, input UserSignInInput) (*models.User, error) {
-	const op = "services.user.checkCred"
+// getUserWithCreds checks if credentials are valid. If it's valid returns user, otherwise returns nil and error
+func (s *UserService) getUserWithCreds(ctx context.Context, input UserSignInInput) (*models.User, error) {
+	const op = "services.user.getUserWithCreds"
 
 	user, err := s.userRepo.GetUserByLogin(ctx, input.Login)
 	if err != nil {
