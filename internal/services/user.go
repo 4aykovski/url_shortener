@@ -42,11 +42,6 @@ type UserService struct {
 	refreshTokenTTL time.Duration
 }
 
-type UserSignUpInput struct {
-	Login    string
-	Password string
-}
-
 func NewUserService(
 	userRepo userRepository,
 	refreshSessionService refreshSessionService,
@@ -61,6 +56,11 @@ func NewUserService(
 		accessTokenTTL:        accessTokenTTL,
 		refreshTokenTTL:       refreshTokenTTL,
 	}
+}
+
+type UserSignUpInput struct {
+	Login    string
+	Password string
 }
 
 func (s *UserService) SignUp(ctx context.Context, input UserSignUpInput) error {
