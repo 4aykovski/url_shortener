@@ -4,10 +4,10 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/4aykovski/learning/golang/rest/internal/http-server/v1/handler"
-	"github.com/4aykovski/learning/golang/rest/internal/http-server/v1/middleware"
-	tokenManager "github.com/4aykovski/learning/golang/rest/internal/lib/token-manager"
-	"github.com/4aykovski/learning/golang/rest/internal/services"
+	"github.com/4aykovski/url_shortener/internal/http-server/v1/handler"
+	"github.com/4aykovski/url_shortener/internal/http-server/v1/middleware"
+	tokenManager "github.com/4aykovski/url_shortener/internal/lib/token-manager"
+	"github.com/4aykovski/url_shortener/internal/services"
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 )

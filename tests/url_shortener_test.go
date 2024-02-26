@@ -6,9 +6,9 @@ import (
 	"path"
 	"testing"
 
-	"github.com/4aykovski/learning/golang/rest/internal/http-server/v1/handler"
-	"github.com/4aykovski/learning/golang/rest/internal/lib/api"
-	"github.com/4aykovski/learning/golang/rest/internal/lib/random"
+	"github.com/4aykovski/url_shortener/internal/http-server/v1/handler"
+	"github.com/4aykovski/url_shortener/internal/lib/api"
+	"github.com/4aykovski/url_shortener/internal/lib/random"
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gavv/httpexpect/v2"
 	"github.com/stretchr/testify/require"

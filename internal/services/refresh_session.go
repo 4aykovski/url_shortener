@@ -7,9 +7,9 @@ import (
 	"sort"
 	"time"
 
-	tokenManager "github.com/4aykovski/learning/golang/rest/internal/lib/token-manager"
-	"github.com/4aykovski/learning/golang/rest/internal/models"
-	"github.com/4aykovski/learning/golang/rest/internal/repository"
+	tokenManager "github.com/4aykovski/url_shortener/internal/lib/token-manager"
+	"github.com/4aykovski/url_shortener/internal/models"
+	"github.com/4aykovski/url_shortener/internal/repository"
 )
 
 var (

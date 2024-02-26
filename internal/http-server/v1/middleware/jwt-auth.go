@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/4aykovski/learning/golang/rest/internal/lib/api/response"
+	"github.com/4aykovski/url_shortener/internal/lib/api/response"
 	"github.com/go-chi/render"
 )
 

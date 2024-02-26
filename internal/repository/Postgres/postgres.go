@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/4aykovski/learning/golang/rest/internal/config"
+	"github.com/4aykovski/url_shortener/internal/config"
 	_ "github.com/lib/pq"
 )
 

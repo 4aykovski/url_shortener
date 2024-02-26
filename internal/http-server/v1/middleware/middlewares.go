@@ -1,6 +1,6 @@
 package middleware
 
-import tokenManager "github.com/4aykovski/learning/golang/rest/internal/lib/token-manager"
+import tokenManager "github.com/4aykovski/url_shortener/internal/lib/token-manager"
 
 type CustomMiddlewares struct {
 	tokenManager tokenManager.TokenManager

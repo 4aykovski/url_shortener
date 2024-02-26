@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/4aykovski/learning/golang/rest/internal/models"
-	"github.com/4aykovski/learning/golang/rest/internal/repository"
+	"github.com/4aykovski/url_shortener/internal/models"
+	"github.com/4aykovski/url_shortener/internal/repository"
 	"github.com/lib/pq"
 )
 

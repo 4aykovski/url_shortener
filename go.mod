@@ -1,4 +1,4 @@
-module github.com/4aykovski/learning/golang/rest
+module github.com/4aykovski/url_shortener
 
 go 1.21.5
 

@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/4aykovski/learning/golang/rest/internal/config"
-	"github.com/4aykovski/learning/golang/rest/internal/http-server/v1"
-	"github.com/4aykovski/learning/golang/rest/internal/lib/hasher"
-	"github.com/4aykovski/learning/golang/rest/internal/lib/logger/slogHelper"
-	tokenManager "github.com/4aykovski/learning/golang/rest/internal/lib/token-manager"
-	"github.com/4aykovski/learning/golang/rest/internal/repository/Postgres"
-	"github.com/4aykovski/learning/golang/rest/internal/services"
+	"github.com/4aykovski/url_shortener/internal/config"
+	"github.com/4aykovski/url_shortener/internal/http-server/v1"
+	"github.com/4aykovski/url_shortener/internal/lib/hasher"
+	"github.com/4aykovski/url_shortener/internal/lib/logger/slogHelper"
+	tokenManager "github.com/4aykovski/url_shortener/internal/lib/token-manager"
+	"github.com/4aykovski/url_shortener/internal/repository/Postgres"
+	"github.com/4aykovski/url_shortener/internal/services"
 	"github.com/natefinch/lumberjack"
 )
 
