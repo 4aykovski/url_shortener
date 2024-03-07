@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type TokenManager interface {
@@ -72,8 +72,8 @@ func (m *Manager) Parse(accessToken string) (string, error) {
 func (m *Manager) newJWT(userId string, ttl time.Duration) (string, error) {
 	const op = "lib.token-manager.token_manager.Parse"
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
-		ExpiresAt: time.Now().Add(ttl).Unix(),
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
 		Subject:   userId,
 	})
 
