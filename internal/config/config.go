@@ -11,9 +11,12 @@ import (
 )
 
 type Config struct {
-	Env        string     `yaml:"env" env-required:"true"`
-	Postgres   Postgres   `yaml:"postgres" env-required:"true"`
-	HTTPServer HTTPServer `yaml:"http_server" env-required:"true"`
+	Env             string        `yaml:"env" env-required:"true"`
+	Postgres        Postgres      `yaml:"postgres" env-required:"true"`
+	HTTPServer      HTTPServer    `yaml:"http_server" env-required:"true"`
+	Secret          string        `yaml:"secret" env-required:"true" env:"SECRET"`
+	AccessTokenTTL  time.Duration `yaml:"access_token_ttl" env-required:"true"`
+	RefreshTokenTTL time.Duration `yaml:"refresh_token_ttl" env-required:"true"`
 }
 
 type Postgres struct {
@@ -29,8 +32,6 @@ type HTTPServer struct {
 	Address     string        `yaml:"address" env-default:"localhost:8080"`
 	Timeout     time.Duration `yaml:"timeout" env-default:"4s"`
 	IdleTimeout time.Duration `yaml:"idleTimeout" env-default:"60s"`
-	User        string        `yaml:"user" env-required:"true"`
-	Password    string        `yaml:"password" env-required:"true" env:"HTTP_SERVER_PASSWORD"`
 }
 
 func MustLoad() *Config {
