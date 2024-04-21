@@ -43,7 +43,6 @@ func NewMux(
 	mux.Use(customMiddlewares.Logger(log))
 	mux.Use(chiMiddleware.Recoverer)
 	mux.Use(chiMiddleware.URLFormat)
-	mux.Use(customMiddlewares.TaskManager(log))
 
 	mux.Route("/api/v1", func(r chi.Router) {
 		initUrlRoutes(log, r, urlHandler, customMiddlewares)

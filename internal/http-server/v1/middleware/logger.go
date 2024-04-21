@@ -25,6 +25,10 @@ func (m *CustomMiddlewares) Logger(log *slog.Logger) func(next http.Handler) htt
 				slog.String("request_id", middleware.GetReqID(r.Context())),
 			)
 
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusOK)
+			}
+
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
 			t1 := time.Now()

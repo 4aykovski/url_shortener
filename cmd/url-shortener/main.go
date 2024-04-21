@@ -13,6 +13,7 @@ import (
 	"github.com/4aykovski/url_shortener/internal/repository/Postgres"
 	"github.com/4aykovski/url_shortener/internal/services"
 	"github.com/natefinch/lumberjack"
+	"github.com/rs/cors"
 )
 
 const (
@@ -54,12 +55,32 @@ func main() {
 	// init router: chi, "chi render"
 	mux := v1.NewMux(log, urlRepo, userService, tM)
 
+	c := cors.New(cors.Options{
+		AllowedMethods: []string{
+			http.MethodGet,
+			http.MethodPost,
+			http.MethodOptions,
+		},
+		AllowedOrigins: []string{
+			"http://localhost:3000"},
+		AllowCredentials: true,
+		AllowedHeaders: []string{
+			"Authorization",
+			"Content-Type",
+		},
+		OptionsPassthrough: true,
+		ExposedHeaders:     []string{},
+		Debug:              true,
+	})
+
+	handler := c.Handler(mux)
+
 	// run server
 	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))
 
 	srv := &http.Server{
 		Addr:         cfg.HTTPServer.Address,
-		Handler:      mux,
+		Handler:      handler,
 		ReadTimeout:  cfg.HTTPServer.Timeout,
 		WriteTimeout: cfg.HTTPServer.Timeout,
 		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
