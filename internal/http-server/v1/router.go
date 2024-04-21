@@ -43,6 +43,7 @@ func NewMux(
 	mux.Use(customMiddlewares.Logger(log))
 	mux.Use(chiMiddleware.Recoverer)
 	mux.Use(chiMiddleware.URLFormat)
+	mux.Use(customMiddlewares.TaskManager(log))
 
 	mux.Route("/api/v1", func(r chi.Router) {
 		initUrlRoutes(log, r, urlHandler, customMiddlewares)
@@ -67,7 +68,7 @@ func initUserRoutes(log *slog.Logger, r chi.Router, h *handler.UserHandler, mws 
 	r.Route("/users", func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/signUp", h.SignUp(log))
-			r.Post("/signIn", h.SignIn(log))
+			r.Post("/signin", h.SignIn(log))
 			r.Post("/refresh", h.Refresh(log))
 			r.Post("/logout", h.Logout(log))
 		})

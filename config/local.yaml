@@ -1,7 +1,7 @@
 env: "local" # local, dev, prod and etc
 postgres:
   host: "localhost"
-  port: 5433
+  port: 5432
   user: "chaykovski"
   database_name: "url_shortener"
 http_server:

@@ -16,7 +16,6 @@ import (
 	tokenManager "github.com/4aykovski/url_shortener/internal/lib/token-manager"
 	"github.com/4aykovski/url_shortener/internal/repository"
 	"github.com/4aykovski/url_shortener/internal/services"
-	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"

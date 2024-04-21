@@ -13,7 +13,6 @@ import (
 	"github.com/4aykovski/url_shortener/internal/lib/api"
 	"github.com/4aykovski/url_shortener/internal/lib/logger/handlers/slogdiscard"
 	"github.com/4aykovski/url_shortener/internal/repository"
-	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
