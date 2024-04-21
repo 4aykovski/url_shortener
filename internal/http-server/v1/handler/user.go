@@ -250,7 +250,7 @@ func (h *UserHandler) Refresh(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "v1.handler.user.Refresh"
 
-		log = log.With(
+		log := log.With(
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
@@ -271,6 +271,9 @@ func (h *UserHandler) Refresh(log *slog.Logger) http.HandlerFunc {
 		} else {
 			token = cookie.Value
 		}
+
+		emptyCookie := h.newRefreshCookie("", time.Now().Add(-100*time.Second))
+		http.SetCookie(w, emptyCookie)
 
 		tokens, err := h.UserService.Refresh(r.Context(), token)
 		if err != nil {

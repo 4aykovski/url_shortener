@@ -66,7 +66,7 @@ func initUrlRoutes(log *slog.Logger, r chi.Router, h *handler.UrlHandler, mws *m
 func initUserRoutes(log *slog.Logger, r chi.Router, h *handler.UserHandler, mws *middleware.CustomMiddlewares) {
 	r.Route("/users", func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {
-			r.Post("/signUp", h.SignUp(log))
+			r.Post("/signup", h.SignUp(log))
 			r.Post("/signin", h.SignIn(log))
 			r.Post("/refresh", h.Refresh(log))
 			r.Post("/logout", h.Logout(log))
