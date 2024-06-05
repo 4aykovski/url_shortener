@@ -5,15 +5,16 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/4aykovski/url_shortener/internal/config"
-	"github.com/4aykovski/url_shortener/internal/http-server/v1"
-	"github.com/4aykovski/url_shortener/internal/lib/hasher"
-	"github.com/4aykovski/url_shortener/internal/lib/logger/slogHelper"
-	tokenManager "github.com/4aykovski/url_shortener/internal/lib/token-manager"
-	"github.com/4aykovski/url_shortener/internal/repository/Postgres"
-	"github.com/4aykovski/url_shortener/internal/services"
 	"github.com/natefinch/lumberjack"
 	"github.com/rs/cors"
+
+	v1 "github.com/4aykovski/url_shortener/internal/adapters/http-server/v1"
+	"github.com/4aykovski/url_shortener/internal/adapters/repository/postgres"
+	"github.com/4aykovski/url_shortener/internal/config"
+	"github.com/4aykovski/url_shortener/internal/services"
+	"github.com/4aykovski/url_shortener/pkg/hasher"
+	"github.com/4aykovski/url_shortener/pkg/logger/slogHelper"
+	"github.com/4aykovski/url_shortener/pkg/manager/token"
 )
 
 const (
@@ -31,26 +32,27 @@ func main() {
 	log := setupLogger(cfg.Env)
 	log.Info("starting url-shortener", slog.String("env", cfg.Env))
 	log.Debug("debug messages are enabled")
+	log.Debug("Postgres configuration", slog.String("dbname", cfg.Postgres.DatabaseName), slog.String("user", cfg.Postgres.User), slog.String("host", cfg.Postgres.Host), slog.Int("port", cfg.Postgres.Port))
 
 	// init db: Postgres
-	pq, err := Postgres.New(cfg.Postgres)
+	pq, err := postgres.New(cfg.Postgres)
 	if err != nil {
 		log.Error("failed to init Postgres database", slogHelper.Err(err))
 		os.Exit(1)
 	}
 
 	// init repositories
-	urlRepo := Postgres.NewUrlRepository(pq)
-	userRepo := Postgres.NewUserRepository(pq)
-	refreshRepo := Postgres.NewRefreshSessionRepository(pq)
+	urlRepo := postgres.NewUrlRepository(pq)
+	userRepo := postgres.NewUserRepository(pq)
+	refreshRepo := postgres.NewRefreshSessionRepository(pq)
 
 	// init additional stuff
 	h := hasher.NewBcryptHasher()
-	tM := tokenManager.New(cfg.Secret)
+	tM := token.NewManager(cfg.Secret)
 
 	// init services
 	refreshService := services.NewRefreshSessionService(refreshRepo, tM, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
-	userService := services.NewUserService(userRepo, refreshService, h, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
+	userService := services.NewAuthService(userRepo, refreshService, h, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
 
 	// init router: chi, "chi render"
 	mux := v1.NewMux(log, urlRepo, userService, tM)

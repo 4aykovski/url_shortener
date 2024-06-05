@@ -12,7 +12,7 @@ import (
 
 type Config struct {
 	Env             string        `yaml:"env" env-required:"true"`
-	Postgres        Postgres      `yaml:"postgres" env-required:"true"`
+	Postgres        Postgres      `env-required:"true"`
 	HTTPServer      HTTPServer    `yaml:"http_server" env-required:"true"`
 	Secret          string        `yaml:"secret" env-required:"true" env:"SECRET"`
 	AccessTokenTTL  time.Duration `yaml:"access_token_ttl" env-required:"true"`
@@ -20,12 +20,12 @@ type Config struct {
 }
 
 type Postgres struct {
-	Host         string `yaml:"host"`
-	Port         int    `yaml:"port"`
-	User         string `yaml:"user"`
-	Password     string `yaml:"user_password" env-required:"true" env:"POSTGRES_USER_PASSWORD"`
-	DatabaseName string `yaml:"database_name"`
-	DSNTemplate  string `yaml:"DSNTemplate"`
+	Host         string `env:"POSTGRES_HOST"`
+	Port         int    `env:"POSTGRES_PORT"`
+	User         string `env:"POSTGRES_USER"`
+	Password     string `env:"POSTGRES_PASSWORD" env-required:"true"`
+	DatabaseName string `env:"POSTGRES_DB"`
+	DSNTemplate  string
 }
 
 type HTTPServer struct {
