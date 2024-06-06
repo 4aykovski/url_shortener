@@ -7,9 +7,9 @@ import (
 	"sort"
 	"time"
 
-	tokenManager "github.com/4aykovski/url_shortener/internal/lib/token-manager"
-	"github.com/4aykovski/url_shortener/internal/models"
-	"github.com/4aykovski/url_shortener/internal/repository"
+	"github.com/4aykovski/url_shortener/internal/adapters/repository"
+	"github.com/4aykovski/url_shortener/internal/entity"
+	tokenManager "github.com/4aykovski/url_shortener/pkg/manager/token"
 )
 
 var (
@@ -17,11 +17,11 @@ var (
 )
 
 type refreshSessionRepository interface {
-	CreateRefreshSession(ctx context.Context, refreshSession *models.RefreshSession) error
+	CreateRefreshSession(ctx context.Context, refreshSession *entity.RefreshSession) error
 	DeleteRefreshSession(ctx context.Context, token string) error
-	UpdateRefreshSession(ctx context.Context, refreshSession *models.RefreshSession) error
-	GetRefreshSession(ctx context.Context, refreshToken string) (*models.RefreshSession, error)
-	GetUserRefreshSessions(ctx context.Context, userId int) ([]models.RefreshSession, error)
+	UpdateRefreshSession(ctx context.Context, refreshSession *entity.RefreshSession) error
+	GetRefreshSession(ctx context.Context, refreshToken string) (*entity.RefreshSession, error)
+	GetUserRefreshSessions(ctx context.Context, userId int) ([]entity.RefreshSession, error)
 }
 
 type RefreshSessionService struct {
@@ -55,7 +55,7 @@ func (s *RefreshSessionService) CreateRefreshSession(ctx context.Context, userId
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	session := models.RefreshSession{
+	session := entity.RefreshSession{
 		UserId:       userId,
 		RefreshToken: tokens.RefreshToken,
 		ExpiresIn:    time.Now().Add(s.refreshTokenTTL),
@@ -68,13 +68,13 @@ func (s *RefreshSessionService) CreateRefreshSession(ctx context.Context, userId
 	return tokens, nil
 }
 
-func (s *RefreshSessionService) GetAllUserRefreshSessions(ctx context.Context, userId int) ([]models.RefreshSession, error) {
+func (s *RefreshSessionService) GetAllUserRefreshSessions(ctx context.Context, userId int) ([]entity.RefreshSession, error) {
 	const op = "services.refresh_session.GetAllUserRefreshSessions"
 
 	sessions, err := s.refreshSessionRepo.GetUserRefreshSessions(ctx, userId)
 	if err != nil {
 		if errors.Is(err, repository.ErrRefreshSessionsNotFound) {
-			return []models.RefreshSession{}, nil
+			return []entity.RefreshSession{}, nil
 		}
 
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -83,7 +83,7 @@ func (s *RefreshSessionService) GetAllUserRefreshSessions(ctx context.Context, u
 	return sessions, nil
 }
 
-func (s *RefreshSessionService) DeleteEarliestRefreshSession(ctx context.Context, sessions []models.RefreshSession) error {
+func (s *RefreshSessionService) DeleteEarliestRefreshSession(ctx context.Context, sessions []entity.RefreshSession) error {
 	const op = "services.refresh_session.DeleteEarliestRefreshSession"
 
 	// sort sessions in ascending order
@@ -131,6 +131,6 @@ func (s *RefreshSessionService) ValidateRefreshSession(ctx context.Context, refr
 	return session.UserId, nil
 }
 
-func (s *RefreshSessionService) isSessionExpired(session *models.RefreshSession) bool {
+func (s *RefreshSessionService) isSessionExpired(session *entity.RefreshSession) bool {
 	return session.ExpiresIn.After(time.Now())
 }

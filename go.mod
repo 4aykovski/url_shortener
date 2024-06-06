@@ -1,6 +1,8 @@
 module github.com/4aykovski/url_shortener
 
-go 1.21.5
+go 1.22
+
+toolchain go1.22.3
 
 require (
 	github.com/brianvoe/gofakeit/v6 v6.28.0
@@ -22,6 +24,8 @@ require (
 	github.com/TylerBrock/colorjson v0.0.0-20200706003622-8a50f05110d2 // indirect
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
+	github.com/brianvoe/gofakeit v3.18.0+incompatible // indirect
+	github.com/brianvoe/gofakeit/v7 v7.0.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect

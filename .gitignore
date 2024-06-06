@@ -104,3 +104,5 @@ fabric.properties
 
 .env
 .log
+
+.env.compose
