@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/4aykovski/url_shortener/internal/adapters/repository"
@@ -50,7 +51,7 @@ func NewRefreshSessionService(
 func (s *RefreshSessionService) CreateRefreshSession(ctx context.Context, userId int) (*tokenManager.Tokens, error) {
 	const op = "services.refresh_session.CreateRefreshSession"
 
-	tokens, err := s.tokenManager.CreateTokensPair(string(rune(userId)), s.accessTokenTTL)
+	tokens, err := s.tokenManager.CreateTokensPair(strconv.Itoa(userId), s.accessTokenTTL)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

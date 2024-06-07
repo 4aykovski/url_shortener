@@ -129,8 +129,6 @@ func (h *AuthHandler) SignIn(log *slog.Logger) http.HandlerFunc {
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
 
-		log.Info("123")
-
 		var inp authSignInInput
 		err := render.DecodeJSON(r.Body, &inp)
 		if err != nil {

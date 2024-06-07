@@ -10,7 +10,7 @@ import (
 
 type TokenManager interface {
 	CreateTokensPair(userId string, ttl time.Duration) (*Tokens, error)
-	Parse(accessToken string) (string, error)
+	Parse(accessToken string) (jwt.MapClaims, error)
 }
 
 type Manager struct {
@@ -47,7 +47,7 @@ func (m *Manager) CreateTokensPair(userId string, ttl time.Duration) (*Tokens, e
 	}, nil
 }
 
-func (m *Manager) Parse(accessToken string) (string, error) {
+func (m *Manager) Parse(accessToken string) (jwt.MapClaims, error) {
 	const op = "lib.token-manager.token_manager.Parse"
 
 	token, err := jwt.Parse(accessToken, func(token *jwt.Token) (i interface{}, err error) {
@@ -58,23 +58,23 @@ func (m *Manager) Parse(accessToken string) (string, error) {
 		return []byte(m.secret), nil
 	})
 	if err != nil {
-		return "", fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return "", fmt.Errorf("%s: can't get user claims from token", op)
+		return nil, fmt.Errorf("%s: can't get user claims from token", op)
 	}
 
-	return claims["sub"].(string), nil
+	return claims, nil
 }
 
 func (m *Manager) newJWT(userId string, ttl time.Duration) (string, error) {
 	const op = "lib.token-manager.token_manager.Parse"
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
-		Subject:   userId,
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": userId,
+		"exp":     time.Now().Add(ttl).Unix(),
 	})
 
 	completeToken, err := token.SignedString([]byte(m.secret))
