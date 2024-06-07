@@ -1,7 +1,0 @@
-CONFIG_PATH=./config/local.yaml
-SECRET=secretsecretsecretsecretsecretsecret
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_USER=chaykovski
-POSTGRES_DB=url_shortener
-POSTGRES_PASSWORD=pn!nabid48!

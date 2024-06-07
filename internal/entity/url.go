@@ -1,7 +1,8 @@
 package entity
 
 type Url struct {
-	Id    int
-	Alias string
-	Url   string
+	Id     int
+	Alias  string
+	Url    string
+	UserId int
 }

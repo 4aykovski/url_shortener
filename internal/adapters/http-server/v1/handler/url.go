@@ -1,36 +1,36 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
 
-	"github.com/4aykovski/url_shortener/internal/adapters/repository"
+	"github.com/4aykovski/url_shortener/internal/services"
 	resp "github.com/4aykovski/url_shortener/pkg/api/response"
 	"github.com/4aykovski/url_shortener/pkg/logger/slogHelper"
-	"github.com/4aykovski/url_shortener/pkg/random"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 )
 
-//go:generate go run github.com/vektra/mockery/v2@v2.28.2 --name UrlRepository
-type UrlRepository interface {
-	SaveURL(urlToSave string, alias string) error
-	GetURL(alias string) (string, error)
-	DeleteURL(alias string) error
+type urlService interface {
+	SaveURL(ctx context.Context, input services.SaveURLInput) (string, error)
+	GetURL(ctx context.Context, input services.GetURLInput) (string, error)
+	GetAllUserUrls(ctx context.Context, input services.GetAllUserUrlsInput) (services.GetAllUserUrlsOutput, error)
+	DeleteURL(ctx context.Context, input services.DeleteURLInput) error
 }
 
 type UrlHandler struct {
-	UrlRepo UrlRepository
+	urlService urlService
 }
 
 func NewUrlHandler(
-	UrlRepo UrlRepository,
+	urlService urlService,
 ) *UrlHandler {
 	return &UrlHandler{
-		UrlRepo: UrlRepo,
+		urlService: urlService,
 	}
 }
 
@@ -44,8 +44,6 @@ type aliasResponse struct {
 	Alias string `json:"alias,omitempty"`
 }
 
-const aliasLength = 6
-
 func (h *UrlHandler) Save(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "v1.handler.url.Save"
@@ -56,6 +54,14 @@ func (h *UrlHandler) Save(log *slog.Logger) http.HandlerFunc {
 		)
 
 		var req UrlSaveInput
+
+		userId, ok := getUserId(r.Context())
+		if !ok {
+			log.Error("failed to get user id")
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, resp.InternalError())
+			return
+		}
 
 		err := render.DecodeJSON(r.Body, &req)
 		if err != nil {
@@ -79,24 +85,23 @@ func (h *UrlHandler) Save(log *slog.Logger) http.HandlerFunc {
 			return
 		}
 
-		alias := req.Alias
-		if alias == "" {
-			alias = random.NewRandomString(aliasLength)
-		}
-
-		if err = h.UrlRepo.SaveURL(req.URL, alias); err != nil {
-			if errors.Is(err, repository.ErrUrlExists) {
-				log.Info("url already exists", slog.String("url", req.URL))
+		alias, err := h.urlService.SaveURL(r.Context(), services.SaveURLInput{
+			URL:    req.URL,
+			Alias:  req.Alias,
+			UserId: userId,
+		})
+		if err != nil {
+			if errors.Is(err, services.ErrAliasAlreadyExists) {
+				log.Info("alias already exists", slog.String("alias", req.Alias))
 
 				render.Status(r, http.StatusBadRequest)
-				render.JSON(w, r, resp.Error("url already exists"))
+				render.JSON(w, r, resp.Error("alias already exists"))
 				return
 			}
-
-			log.Error("failed to add url", slogHelper.Err(err))
+			log.Error("failed to save url", slogHelper.Err(err))
 
 			render.Status(r, http.StatusInternalServerError)
-			render.JSON(w, r, resp.Error("failed to add url"))
+			render.JSON(w, r, resp.InternalError())
 			return
 		}
 
@@ -104,6 +109,60 @@ func (h *UrlHandler) Save(log *slog.Logger) http.HandlerFunc {
 
 		responseOK(w, r, alias)
 	}
+}
+
+type GetAllUserUrlsResponse struct {
+	resp.Response
+	Urls map[string]string `json:"urls"`
+}
+
+func (h *UrlHandler) GetAllUserUrls(log *slog.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "v1.handler.url.GetAllUserUrls"
+
+		log = log.With(
+			slog.String("op", op),
+			slog.String("request_id", middleware.GetReqID(r.Context())),
+		)
+
+		userId, ok := getUserId(r.Context())
+		if !ok {
+			log.Error("failed to get user id")
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, resp.InternalError())
+			return
+		}
+
+		output, err := h.urlService.GetAllUserUrls(r.Context(), services.GetAllUserUrlsInput{
+			UserId: userId,
+		})
+		if err != nil {
+			if errors.Is(err, services.ErrUserHasNoUrls) {
+				log.Info("user has no urls")
+
+				render.Status(r, http.StatusOK)
+				render.JSON(w, r, GetAllUserUrlsResponse{
+					Response: resp.OK(),
+				})
+				return
+			}
+
+			log.Error("failed to get urls", slogHelper.Err(err))
+
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, resp.InternalError())
+			return
+		}
+
+		log.Info("urls fetched")
+
+		render.Status(r, http.StatusOK)
+		render.JSON(w, r, GetAllUserUrlsResponse{
+			Response: resp.OK(),
+			Urls:     output.Urls,
+		})
+	}
+
 }
 
 func (h *UrlHandler) Redirect(log *slog.Logger) http.HandlerFunc {
@@ -124,15 +183,18 @@ func (h *UrlHandler) Redirect(log *slog.Logger) http.HandlerFunc {
 			return
 		}
 
-		resURL, err := h.UrlRepo.GetURL(alias)
-		if errors.Is(err, repository.ErrURLNotFound) {
-			log.Info("url not found", "alias", alias)
-
-			render.Status(r, http.StatusBadRequest)
-			render.JSON(w, r, resp.Error("url not found"))
-			return
-		}
+		resURL, err := h.urlService.GetURL(r.Context(), services.GetURLInput{
+			Alias: alias,
+		})
 		if err != nil {
+			if errors.Is(err, services.ErrURLNotFound) {
+				log.Info("url not found", "alias", alias)
+
+				render.Status(r, http.StatusBadRequest)
+				render.JSON(w, r, resp.Error("url not found"))
+				return
+			}
+
 			log.Error("failed to get url", slogHelper.Err(err))
 
 			render.Status(r, http.StatusInternalServerError)
@@ -155,6 +217,14 @@ func (h *UrlHandler) Delete(log *slog.Logger) http.HandlerFunc {
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
 
+		userId, ok := getUserId(r.Context())
+		if !ok {
+			log.Error("failed to get user id")
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, resp.InternalError())
+			return
+		}
+
 		alias := chi.URLParam(r, "alias")
 		if alias == "" {
 			log.Info("empty alias")
@@ -164,16 +234,20 @@ func (h *UrlHandler) Delete(log *slog.Logger) http.HandlerFunc {
 			return
 		}
 
-		err := h.UrlRepo.DeleteURL(alias)
-		if errors.Is(err, repository.ErrURLNotFound) {
-			log.Info("url not found", "alias", alias)
-
-			render.Status(r, http.StatusBadRequest)
-			render.JSON(w, r, resp.Error("url not found"))
-			return
-		}
+		err := h.urlService.DeleteURL(r.Context(), services.DeleteURLInput{
+			Alias:  alias,
+			UserId: userId,
+		})
 		if err != nil {
-			log.Info("failed to delete url", "alias", alias)
+			if errors.Is(err, services.ErrURLNotFound) {
+				log.Info("url not found", "alias", alias)
+
+				render.Status(r, http.StatusBadRequest)
+				render.JSON(w, r, resp.Error("url not found"))
+				return
+			}
+
+			log.Error("failed to delete url", slogHelper.Err(err))
 
 			render.Status(r, http.StatusInternalServerError)
 			render.JSON(w, r, resp.InternalError())

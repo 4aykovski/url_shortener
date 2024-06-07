@@ -51,11 +51,12 @@ func main() {
 	tM := token.NewManager(cfg.Secret)
 
 	// init services
+	urlService := services.NewUrlService(urlRepo)
 	refreshService := services.NewRefreshSessionService(refreshRepo, tM, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
 	userService := services.NewAuthService(userRepo, refreshService, h, cfg.AccessTokenTTL, cfg.RefreshTokenTTL)
 
 	// init router: chi, "chi render"
-	mux := v1.NewMux(log, urlRepo, userService, tM)
+	mux := v1.NewMux(log, urlService, userService, tM)
 
 	c := cors.New(cors.Options{
 		AllowedMethods: []string{
