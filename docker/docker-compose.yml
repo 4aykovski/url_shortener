@@ -3,24 +3,24 @@ version: "3.8"
 services:
   app:
     build:
-      context: .
+      context: ../
       dockerfile: ./cmd/url-shortener/Dockerfile
     command: ./cmd/url-shortener/app
+    env_file:
+      - ./.env
     ports:
-      - 8080:8080
+      - ${OUT_HTTP_PORT}:8080
     depends_on:
       - db
       - migrator
-    env_file:
-      - ./.env.compose
 
   migrator:
     container_name: migrator
     build:
-      context: .
+      context: ../
       dockerfile: ./migrations/Dockerfile
     env_file:
-      - ./.env.compose
+      - ./.env
     depends_on:
       - db
 
@@ -29,6 +29,6 @@ services:
     restart: always
     image: postgres:latest
     env_file:
-      - ./.env.compose
+      - ./.env
     ports:
-      - 5436:5432
+      - 5436:${POSTGRES_PORT}

@@ -12,7 +12,6 @@ FROM alpine
 WORKDIR /app
 
 COPY --from=builder /app/app ./cmd/url-shortener/
-COPY --from=builder /app/config ./config
-COPY --from=builder /app/.env.compose ./.env
+COPY --from=builder /app/.env ./.env
 
 CMD ["./cmd/url-shortener/app"]
