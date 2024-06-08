@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
@@ -11,12 +10,12 @@ import (
 )
 
 type Config struct {
-	Env             string        `yaml:"env" env-required:"true"`
+	Env             string        `env:"ENV" env-required:"true"`
 	Postgres        Postgres      `env-required:"true"`
-	HTTPServer      HTTPServer    `yaml:"http_server" env-required:"true"`
-	Secret          string        `yaml:"secret" env-required:"true" env:"SECRET"`
-	AccessTokenTTL  time.Duration `yaml:"access_token_ttl" env-required:"true"`
-	RefreshTokenTTL time.Duration `yaml:"refresh_token_ttl" env-required:"true"`
+	HTTPServer      HTTPServer    `env-required:"true"`
+	Secret          string        `env:"SECRET" env-required:"true" env:"SECRET"`
+	AccessTokenTTL  time.Duration `env:"ACCESS_TOKEN_TTL" env-required:"true"`
+	RefreshTokenTTL time.Duration `env:"REFRESH_TOKEN_TTL" env-required:"true"`
 }
 
 type Postgres struct {
@@ -29,9 +28,9 @@ type Postgres struct {
 }
 
 type HTTPServer struct {
-	Address     string        `yaml:"address" env-default:"localhost:8080"`
-	Timeout     time.Duration `yaml:"timeout" env-default:"4s"`
-	IdleTimeout time.Duration `yaml:"idleTimeout" env-default:"60s"`
+	Address     string        `env:"HTTP_ADDRESS" env-default:"localhost:8080"`
+	Timeout     time.Duration `env:"TIMEOUT" env-default:"4s"`
+	IdleTimeout time.Duration `env:"IDLE_TIMEOUT" env-default:"60s"`
 }
 
 func MustLoad() *Config {
@@ -39,18 +38,9 @@ func MustLoad() *Config {
 		log.Fatal("can't load .env")
 	}
 
-	configPath := os.Getenv("CONFIG_PATH")
-	if configPath == "" {
-		log.Fatal("CONFIG_PATH is not set")
-	}
-
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		log.Fatalf("config file does not exist: %s", configPath)
-	}
-
 	var cfg Config
 
-	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
+	if err := cleanenv.ReadEnv(&cfg); err != nil {
 		log.Fatalf("cannot read config: %s", err)
 	}
 
