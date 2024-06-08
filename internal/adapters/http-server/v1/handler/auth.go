@@ -55,7 +55,7 @@ func (h *AuthHandler) SignUp(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "v1.handler.user.SignUp"
 
-		log = log.With(
+		log := log.With(
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
@@ -124,7 +124,7 @@ func (h *AuthHandler) SignIn(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "v1.handler.user.SignIn"
 
-		log.With(
+		log := log.With(
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
@@ -192,7 +192,7 @@ func (h *AuthHandler) Logout(log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "v1.handler.user.Logout"
 
-		log = log.With(
+		log := log.With(
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
