@@ -1,7 +1,0 @@
-env: "local" # local, dev, prod and etc
-http_server:
-  address: "0.0.0.0:8080"
-  timeout: 4s
-  idle_timeout: 60s
-access_token_ttl: 900s
-refresh_token_ttl: 5184000s
